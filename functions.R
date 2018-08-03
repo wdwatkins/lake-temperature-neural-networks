@@ -24,6 +24,7 @@ augment_features <- function(df){
            )) 
 }
 
+#diff temp plot isn't working - switched to ggplot instead
 plot_heatmap_hack <- function(glm_temp, nn_temp, diff_temp){
   glmtools:::.stacked_layout(TRUE, num_divs = 3)
   clim <- c(-2,30)
@@ -31,40 +32,10 @@ plot_heatmap_hack <- function(glm_temp, nn_temp, diff_temp){
                vis_time = seq.Date(from = as.Date("1990-01-01"), to = as.Date("2006-01-01"), by = 'year'))
   glmtools:::.plot_df_heatmap(glm_temp, bar_title="GLM", xaxis = xaxis, col_lim = clim)
   glmtools:::.plot_df_heatmap(nn_temp, bar_title="NN", xaxis = xaxis, col_lim = clim)
-  .plot_df_heatmap_na_custom(diff_temp, bar_title="NN - GLM", xaxis = xaxis, col_lim = clim)
+  glmtools:::.plot_df_heatmap(diff_temp, bar_title="NN - GLM", xaxis = xaxis, col_lim = clim)
 }
 
 
-.plot_df_heatmap_na_custom <- function(data, bar_title, num_cells, palette, title_prefix=NULL, overlays=NULL, xaxis=NULL, col_lim){
-  
-  z_out <- rLakeAnalyzer::get.offsets(data)
-  reference = ifelse(substr(names(data)[2],1,3) == 'elv', 'bottom', 'surface')
-  
-  if (missing(col_lim))
-    col_lim = range(data[, -1], na.rm = TRUE)
-  if (missing(palette))
-    palette <- colorRampPalette(c("violet","blue","cyan", "green3", "yellow", "orange", "red"), 
-                                bias = 1, space = "rgb")
-  
-  col_subs <- head(pretty(col_lim, 6), -1)
-  levels <- sort(unique(c(col_subs, pretty(col_lim, 15))))
-  colors <- palette(n = length(levels)-1)
-  dates <- data[, 1]
-  matrix_var <- data.matrix(data[, -1])
-  if(is.null(xaxis)){
-    xaxis <- get_xaxis(dates)
-  }
-  
-  yaxis <- glmtools:::get_yaxis_2D(z_out, reference, prefix=title_prefix)
-  glmtools:::plot_layout(xaxis, yaxis, add=TRUE)
-  glmtools:::.filled.contour(x = dates, y = z_out, z =matrix_var,
-                  levels= levels,
-                  col=colors)
-  overlays # will plot any overlay functions
-  axis_layout(xaxis, yaxis) #doing this after heatmap so the axis are on top
-  
-  color_key(levels, colors, subs=col_subs, col_label = bar_title)
-}
 #downsample dates to approx nobs from paper - only keep every fourth date
 # dates_keep <- unique(obs$DateTime)[c(TRUE,FALSE,FALSE,FALSE)]
 # obs <- obs %>% filter(DateTime %in% dates_keep)

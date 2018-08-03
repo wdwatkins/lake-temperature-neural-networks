@@ -48,7 +48,7 @@ all_model_unlabeled_data <- as.matrix(select(all_model_temps_drivers, -DateTime)
         scale = attr(train_data, "scaled:scale"))
 
 #build the neural net
-l2_lambda <- 0.5 #regularization factors
+l2_lambda <- 0.5 #regularization factors, L1 and L2 regularization
 l1_lambda <- 0.5
 network <- keras_model_sequential() %>%
   layer_dense(units = 12, input_shape = c(12),
@@ -85,8 +85,8 @@ pred_temps <- preds_unlabeled_model %>%
 
 preds_obs_res <- left_join(preds_unlabeled_model, obs, by = c("DateTime", "Depth")) %>% 
   mutate(resid = Modeled_temps - temp) %>% 
-  filter(!is.na(Modeled_temps)) %>% select(Depth, DateTime, resid) %>% 
-  tidyr::spread(key = Depth, value = "resid",sep = "_") %>% as.data.frame()
+  filter(!is.na(Modeled_temps)) %>% select(Depth, DateTime, resid) #%>% 
+  #tidyr::spread(key = Depth, value = "resid",sep = "_") %>% as.data.frame()
 
 # diff_temps <- all_model_temps_short
 # n_cols <- ncol(all_model_temps_short)
@@ -109,4 +109,23 @@ training_res <- bind_cols(date = train_dates, preds = preds_train, obs = trainin
   mutate(abs_res = abs(preds_train - obs), res = preds_train - obs, month = lubridate::month(date)) 
  
 library(ggplot2)
-ggplot(preds_obs_res, aes(x = date, y = Depth)) + geom_tile(aes(fill=resid)) + scale_fill_gradientn(colours = c("violet","blue","cyan", "green3", "yellow", "orange", "red")) + scale_y_reverse() + ggtitle("Modeled - observed")
+colscale <- scale_fill_gradientn(colours = c("violet","blue","cyan", "green3", "yellow", "orange", "red"),
+                     breaks = seq(-10,15,5), values = scales::rescale(seq(-10,15,5)),
+                     limits = c(-10, 20))
+nn_resid_plot <- ggplot(preds_obs_res, aes(x = DateTime, y = Depth)) + geom_tile(aes(fill=resid)) + 
+  colscale + scale_y_reverse() + ggtitle("Modeled w/NN - observed")
+temps_resids <- all_model_temps %>% left_join(obs, by = c("DateTime", "Depth")) %>% 
+  mutate(resid = Modeled_temp - temp)
+glm_resid_plot <- ggplot(temps_resids, aes(x = DateTime, y = Depth)) + geom_tile(aes(fill=resid)) + 
+   colscale + scale_y_reverse() + ggtitle("GLM - observed")
+png("glm_nn_resid_compare.png", width = 20, height = 12, units = "in", res = 200)
+gridExtra::grid.arrange(glm_resid_plot, nn_resid_plot, nrow=2)
+dev.off()
+
+all_resids <- temps_resids %>% rename(glm_resid = resid) %>% 
+  left_join(preds_obs_res, c("DateTime", "Depth")) %>% 
+  mutate(abs_glm_resid_minus_abs_nn_resid = abs(glm_resid) - abs(resid))
+ggplot(all_resids, aes(x = DateTime, y = Depth)) + 
+  geom_tile(aes(fill=abs_glm_resid_minus_abs_nn_resid)) + 
+  scale_y_reverse() + ggtitle("abs(GLM residual) - abs(NN residual)") + 
+  scale_fill_gradient2(name = "Deg. C")
