@@ -3,7 +3,7 @@ rm(list=ls())
 library(dplyr)
 library(keras)
 
-source('functions.R')
+source('src/functions.R')
 obs <- readRDS('in/nhd_13293262.rds')
 
 data.table::fwrite(obs, file = "in/mendota_obs.csv")
