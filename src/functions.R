@@ -1,7 +1,3 @@
-temp_to_density <- function(x) {
-  1000*(1 - ((x + 288.9414)*(x - 3.9863)^2)/(508929.2 * (x + 68.12963)))
-}
-
 identify_out_of_order <- function(vec){
   keep <- rep(TRUE, length(vec))
   mx <- vec[1]
@@ -41,7 +37,7 @@ plot_heatmap_hack <- function(glm_temp, nn_temp, diff_temp){
 # obs <- obs %>% filter(DateTime %in% dates_keep)
 #TODO: eliminate obs that are physically inconsistent?
 
-# obs_density <- obs %>% mutate(rho = temp_to_density(temp)) %>%
+# obs_density <- obs %>% mutate(rho = rLakeAnalyzer::water.density(temp)) %>%
 #   group_by(DateTime) %>% arrange(DateTime, Depth) %>%
 #   mutate(rank = min_rank(rho), keep = identify_out_of_order(rho)) %>%
 #   mutate(keep = identify_out_of_order(rank))
