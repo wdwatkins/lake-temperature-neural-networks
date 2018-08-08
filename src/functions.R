@@ -1,4 +1,10 @@
-identify_out_of_order <- function(vec){
+#attempting to identify bad observations (i.e. violating increasing density w/ depth)
+#This is different from cummin() in that cummin throws out everything after a deviation from 
+#monotonically increasing. When this function encounters a point that is not monotonic, it discards it,
+#but then compares to the next one. It was an attempt to not throw out entire temp profiles based on 
+#a single bad observation
+#currently not used.
+remove_out_of_order <- function(vec){
   keep <- rep(TRUE, length(vec))
   mx <- vec[1]
   for(i in seq_along(vec)){
