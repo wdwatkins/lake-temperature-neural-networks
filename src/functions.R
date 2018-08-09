@@ -22,11 +22,12 @@ augment_features <- function(df){
     mutate(yday = lubridate::yday(DateTime),
            Snow = ifelse(Snow > 0, yes = 1, no = 0),
            freezing = ifelse(AirTemp <= 0, yes = 1, no = 0),
-           gdd = AirTemp - 10, gdd = ifelse(gdd < 0, yes = 0, no = gdd
-           )) 
+           year = lubridate::year(DateTime)) %>% 
+    group_by(year) %>% 
+    mutate(gdd = cumsum(pmax(AirTemp - 10, 0))) %>% ungroup() %>% select(-year) 
 }
 
-#diff temp plot isn't working - switched to ggplot instead
+#diff temp plot isn't working - switched to ggplot instead of using this function
 plot_heatmap_hack <- function(glm_temp, nn_temp, diff_temp){
   glmtools:::.stacked_layout(TRUE, num_divs = 3)
   clim <- c(-2,30)
