@@ -65,8 +65,7 @@ network <- keras_model_sequential() %>%
 summary(network)
 network %>% compile(
   optimizer = optimizer_adadelta(clipnorm = 1),
-  loss = "mean_squared_error",
-  metrics = "mean_squared_error") #keras objects are modified in place!
+  loss = "mean_squared_error") #keras objects are modified in place!
 
 #fitting 
 #paper: 10k max epochs, patience 500
