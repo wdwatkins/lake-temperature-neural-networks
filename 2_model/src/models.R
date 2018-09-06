@@ -91,20 +91,20 @@ run_model_03 <- function(dat) {
       units = 12, input_shape = c(12),
       kernel_regularizer = reg,
       kernel_initializer = init,
-      activation = "relu",
-      layer_dropout(rate = 0.3)) %>%
+      activation = "relu") %>%
+    layer_dropout(rate = 0.3) %>%
     layer_dense(
       units = 12,
       kernel_regularizer = reg,
       kernel_initializer = init,
-      activation = "relu",
-      layer_dropout(rate = 0.3)) %>%
+      activation = "relu") %>%
+    layer_dropout(rate = 0.3) %>%
     layer_dense(
       units = 12,
       kernel_regularizer = reg,
       kernel_initializer = init,
-      activation = "relu",
-      layer_dropout(rate = 0.3)) %>%
+      activation = "relu") %>%
+    layer_dropout(rate = 0.3) %>%
     layer_dense(
       units = 1,
       kernel_regularizer = reg,
