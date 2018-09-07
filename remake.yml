@@ -1,0 +1,10 @@
+target_default: all
+
+include:
+  - 1_format.yml
+  - 2_model.yml
+
+targets:
+  all:
+    depends:
+      - 1_format
