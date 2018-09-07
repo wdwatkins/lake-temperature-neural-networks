@@ -1,0 +1,33 @@
+target_default: 1_format
+
+packages:
+  - dplyr
+  - tidyr
+
+sources:
+  - 1_format/src/combine_nn_inputs.R
+
+targets:
+  1_format:
+    depends:
+      - split_scaled
+
+  # combine_nn_data has 3 .ind files as arguments but right now only uses them
+  # to determine the names of data files, which I promise exist. These are really
+  # just placeholders until we can connect up the start of this pipeline so that
+  # data files come from other pipelines, at which point the I() around those .ind
+  # files will no longer be appropriate and we should call sc_retrieve within
+  # combine_nn_data.
+  combined:
+    command: combine_nn_data(
+      obs_ind=I('1_format/tmp/mendota_obs.csv.ind'),
+      glm_preds_ind=I('1_format/in/output.nc.ind'),
+      meteo_ind=I('1_format/in/Mendota_meteo.feather.ind'),
+      min_obs_per_depth=I(100),
+      min_obs_per_date=I(1))
+
+  formatted:
+    command: format_nn_data(combined, structure=I('NN'))
+
+  split_scaled:
+    command: split_scale_nn_data(formatted)

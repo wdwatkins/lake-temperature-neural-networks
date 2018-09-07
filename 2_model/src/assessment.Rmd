@@ -1,0 +1,180 @@
+---
+title: "Model `r model_list$id` Assessment"
+author: "Alison Appling"
+date: "`r base::format(base::Sys.time(), '%B %d, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyr)
+library(keras)
+library(ggplot2)
+library(gridExtra)
+```
+
+# Overview
+
+Model `r model_list$id`: `r model_list$description`
+
+```{r summarize_network, echo=FALSE}
+model_list$network <- unserialize_model(model_list$serialized)
+summary(model_list$network)
+```
+
+# Fitting trajectory
+
+```{r summarize_history, echo=FALSE}
+model_list$history
+```
+
+```{r plot_loss, echo=FALSE}
+loss_history <- model_list$history %>%
+  as_data_frame() %>%
+  filter(metric %in% c('loss'), !is.na(value))
+g1 <- loss_history %>%
+  ggplot2::ggplot(aes(x=epoch, y=value, color=data)) +
+  geom_point(size=0.1, alpha=0.5) +
+  scale_color_discrete('') +
+  scale_y_log10() + ylab('loss') +
+  theme_classic()
+g2 <- loss_history %>%
+  ggplot2::ggplot(aes(x=epoch, y=value, color=data)) +
+  geom_point(size=0.1, alpha=0.5) +
+  scale_color_discrete('') +
+  scale_y_continuous(limits=c(0,2*median(loss_history$value))) + ylab('loss') +
+  theme_classic()
+gridExtra::grid.arrange(g1, g2, nrow=2)
+```
+
+# Prediction error
+
+```{r preds, echo=FALSE}
+preds <- bind_rows(
+  data_frame(
+    split = 'train',
+    example = names(dat$train_target),
+    glm = dat$train_input[, 'GLMTemp'] * dat$scales[['GLMTemp']] + dat$centers[['GLMTemp']],
+    nn = model_list$network %>% predict(dat$train_input) %>% c(),
+    obs = dat$train_target),
+  data_frame(
+    split = 'devel',
+    example = names(dat$dev_target),
+    glm = dat$dev_input[, 'GLMTemp'] * dat$scales[['GLMTemp']] + dat$centers[['GLMTemp']],
+    nn = model_list$network %>% predict(dat$dev_input) %>% c(),
+    obs = dat$dev_target)
+) %>%
+  mutate( # the following makes assumptions that only work for NN (not RNN or SNN) models
+    date=as.Date(substring(example, 1, 8), format='%Y%m%d'),
+    depth=as.numeric(gsub('[[:digit:]]{8}_', '', gsub('m', '', example)))
+  ) %>% 
+  gather(model, pred, glm, nn, obs)
+```
+
+```{r rmse, echo=FALSE}
+rmse <- function(x1, x2) {
+  sqrt(mean((x1 - x2)^2))
+}
+rmses <- tribble(
+  ~model, ~split, ~rmse,
+  'glm', 'train', rmse(preds %>% filter(model=='glm', split=='train') %>% pull(pred), preds %>% filter(model=='obs', split=='train') %>% pull(pred)),
+  'glm', 'devel', rmse(preds %>% filter(model=='glm', split=='devel') %>% pull(pred), preds %>% filter(model=='obs', split=='devel') %>% pull(pred)),
+  'nn', 'train', rmse(preds %>% filter(model=='nn', split=='train') %>% pull(pred), preds %>% filter(model=='obs', split=='train') %>% pull(pred)),
+  'nn', 'devel', rmse(preds %>% filter(model=='nn', split=='devel') %>% pull(pred), preds %>% filter(model=='obs', split=='devel') %>% pull(pred))
+) %>%
+  spread(split, rmse)
+rmses
+```
+
+# Predictions
+
+```{r plot_preds, fig.width=8, fig.height=7, echo=FALSE}
+bg <- 'gray95'
+oneyear <- as.Date(c('2009-04-01','2010-01-01'))
+tile_height <- 1
+colors_preds <- scale_fill_gradientn(na.value=bg, colors=c('blue','orange'))
+preds %>%
+  ggplot(aes(x=date, y=depth, fill=pred)) +
+  geom_tile(height=tile_height) +
+  colors_preds +
+  scale_y_reverse() +
+  theme_classic() +
+  facet_grid(model ~ .) +
+  theme(panel.background = element_rect(fill=bg)) +
+  ggtitle('Predictions and observations by date and depth')
+```
+
+```{r plot_preds_1year, fig.width=8, fig.height=5, echo=FALSE}
+preds %>%
+  filter(date >= oneyear[1] & date < oneyear[2]) %>%
+  ggplot(aes(x=date, y=depth, fill=pred)) +
+  geom_tile(height=tile_height) +
+  colors_preds +
+  scale_y_reverse() +
+  theme_classic() +
+  facet_grid(model ~ .) +
+  theme(panel.background = element_rect(fill=bg)) +
+  ggtitle(sprintf('Predictions and observations by date and depth (%s)', format(oneyear[1], '%Y')))
+```
+
+# Residuals
+
+To get the patterns to pop out while not dropping any data, I'm using a color scale with 5 breakpoints that line up to: the minimum residual, the 5% quantile of all residuals, residual=0 degrees, 95% quantile of residuals, and maximum residual.
+
+```{r plot_resids, fig.width=8, fig.height=5, echo=FALSE}
+resids <- preds %>%
+  spread(model, pred) %>%
+  gather(model, pred, glm, nn) %>%
+  mutate(resid = pred - obs,
+         resid_percentile = ecdf(resid)(resid))
+if(quantile(resids$resid, 0.05) > 0 || quantile(resids$resid, 0.95) < 0) {
+  stop('absolute residuals color scheme requires that 0 lies between the 5% and 95% quantiles of all residuals')
+}
+colors_abs_resids <- with(
+  list(resid_breaks=c(quantile(resids$resid, probs=c(0, 0.05)), 0, quantile(resids$resid, probs=c(0.95, 1))) %>%
+         setNames(., paste(sprintf('%0.1f', .), sprintf('(%s)', c('min', '5%', 'perfect', '95%', 'max'))))), 
+  scale_fill_gradientn(
+    'Residual',
+    na.value=bg, colors=c('#2c7bb6','#abd9e9','#ffffbf','#fdae61','#d7191c'),
+    breaks = resid_breaks,
+    values = scales::rescale(resid_breaks),
+    limits = range(resid_breaks)))
+resids %>%
+  ggplot(aes(x=date, y=depth, fill=resid)) +
+  geom_tile(height=tile_height) +
+  scale_y_reverse() +
+  colors_abs_resids +
+  theme_classic() +
+  theme(panel.background = element_rect(fill=bg)) +
+  facet_grid(model ~ .) +
+  ggtitle('Predictions - Observations (all years)')
+```
+
+```{r plot_resids_1year, fig.width=8, fig.height=5, echo=FALSE}
+resids %>%
+  filter(date >= oneyear[1] & date < oneyear[2]) %>%
+  ggplot(aes(x=date, y=depth, fill=resid)) +
+  geom_tile(height=tile_height) +
+  colors_abs_resids +
+  scale_y_reverse() +
+  theme_classic() +
+  theme(panel.background = element_rect(fill=bg)) + 
+  facet_grid(model ~ .) +
+  ggtitle(sprintf('Predictions - Observations (%s)', format(oneyear[1], '%Y')))
+```
+
+# Predictions vs Observations
+
+```{r plot_preds_pvo, echo=FALSE}
+preds %>%
+  spread(model, pred) %>%
+  gather(model, pred, glm, nn) %>%
+  ggplot(aes(x=obs, y=pred, color=model)) +
+  geom_point() + 
+  geom_abline() +
+  scale_color_manual(values=c('#64dd17','#ef6c00')) +
+  facet_grid(model ~ split) +
+  theme_classic() +
+  ggtitle('Predictions vs Observations (all years)')
+```
