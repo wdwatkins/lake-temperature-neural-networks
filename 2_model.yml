@@ -13,18 +13,26 @@ targets:
   2_model:
     depends:
       - model_01
+      - model_01_eval
+      - model_02
+      - model_02_eval
+      - model_03
+      - model_03_eval
+
+  lake_name:
+    command: c(I('Mille Lacs'))
 
   model_01:
     command: run_model_01(split_scaled)
   model_01_eval:
-    command: evaluate_model(model_01, split_scaled, rmd_file="2_model/src/assessment.Rmd")
+    command: evaluate_model(model_01, split_scaled, rmd_file="2_model/src/assessment.Rmd", lake_name = lake_name)
 
   model_02:
     command: run_model_02(split_scaled)
   model_02_eval:
-    command: evaluate_model(model_02, split_scaled, rmd_file="2_model/src/assessment.Rmd")
+    command: evaluate_model(model_02, split_scaled, rmd_file="2_model/src/assessment.Rmd", lake_name = lake_name)
 
   model_03:
     command: run_model_03(split_scaled)
   model_03_eval:
-    command: evaluate_model(model_03, split_scaled, rmd_file="2_model/src/assessment.Rmd")
+    command: evaluate_model(model_03, split_scaled, rmd_file="2_model/src/assessment.Rmd", lake_name = lake_name)

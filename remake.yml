@@ -8,3 +8,4 @@ targets:
   all:
     depends:
       - 1_format
+      - 2_model
