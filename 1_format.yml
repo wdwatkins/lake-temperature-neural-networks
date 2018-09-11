@@ -20,9 +20,9 @@ targets:
   # combine_nn_data.
   combined:
     command: combine_nn_data(
-      obs_ind=I('1_format/tmp/mendota_obs.csv.ind'),
-      glm_preds_ind=I('1_format/in/output.nc.ind'),
-      meteo_ind=I('1_format/in/Mendota_meteo.feather.ind'),
+      obs_ind=I('1_format/tmp/millelacs_obs.csv.ind'),
+      glm_preds_ind=I('1_format/in/millelacs_output.nc.ind'),
+      meteo_ind=I('1_format/in/millelacs_meteo.feather.ind'),
       min_obs_per_depth=I(100),
       min_obs_per_date=I(1))
 
