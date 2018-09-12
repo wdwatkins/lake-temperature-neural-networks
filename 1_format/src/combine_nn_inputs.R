@@ -43,8 +43,8 @@ combine_nn_data <- function(
   obs_ind='1_format/tmp/mendota_obs.csv.ind',
   glm_preds_ind='1_format/in/output.nc.ind',
   meteo_ind='1_format/in/Mendota_meteo.feather.ind',
-  min_obs_per_depth=100,
-  min_obs_per_date=1,
+  min_obs_per_depth=yaml::read_yaml('lib/cfg/settings.yml')$min_obs_per_depth,
+  min_obs_per_date=yaml::read_yaml('lib/cfg/settings.yml')$min_obs_per_date,
   common_depths) {
 
   # convert ind files to data files
