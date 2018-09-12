@@ -26,6 +26,8 @@ targets:
       min_obs_per_depth=I(100),
       min_obs_per_date=I(1))
 
+
+
   formatted:
     command: format_nn_data(combined, structure=I('NN'))
 
