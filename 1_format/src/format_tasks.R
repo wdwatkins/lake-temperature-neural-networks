@@ -36,17 +36,17 @@ create_format_task_plan <- function(site_ids, ind_dir, settings_yml = "lib/cfg/s
     })
 
   step2_formatted <- create_task_step(step_name = "format_nn_data",
-                                      command = function(task_name, ...) {
-                                        sprintf("format_nn_data(%s_combine_nn_data, structure=I('NN'))",task_name)
+                                      command = function(steps,...) {
+                                        sprintf("format_nn_data(%s, structure=I('NN'))",steps[['combine_nn_data']]$target_name)
                                       },
                                       depends = settings_yml)
   step3_split_scale <- create_task_step(step_name = "split_scale_nn_data",
                                         target_name = function(task_name, ...) {
                                           sprintf("1_format/out/%s_split_scaled.rds.ind", task_name)
                                         },
-                                        command = function(task_name, target_name, ...) {
-                                          sprintf("split_scale_nn_data(%s_format_nn_data, ind_file = \'%s\')",
-                                                  task_name, target_name)
+                                        command = function(steps, target_name, ...) {
+                                          sprintf("split_scale_nn_data(%s, ind_file = \'%s\')",
+                                                  steps[['format_nn_data']]$target_name, target_name)
                                         },
                                         depends = settings_yml)
   format_task_plan <- create_task_plan(task_names = site_ids,
