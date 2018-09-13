@@ -1,11 +1,18 @@
 target_default: all
 
+packages:
+  - readr
+
 include:
   - 1_format.yml
-  - 2_model.yml
+
+#assuming that certain files from previous pipelines have been manually pulled down:
+# -- List of sites from pipeline 1
+# -- GLM output for list of sites
+# -- Driver data for cell-specific files (need crosswalk to NHDs)
+# -- big temp obs table
 
 targets:
   all:
     depends:
       - 1_format
-      - 2_model

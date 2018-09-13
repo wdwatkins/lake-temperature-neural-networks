@@ -294,9 +294,9 @@ format_nn_data <- function(inputs, structure=c('NN','SNN','RNN','RSNN')) {
 #'   the model-ready neural network inputs and outputs, respectively
 #' @param dev_frac fraction of dataset to assign to development (validation)
 #' @param test_frac fraction of dataset to reserve for testing
-split_scale_nn_data <- function(formatted,
+split_scale_nn_data <- function(formatted, ind_file,
   dev_frac=yaml::read_yaml('lib/cfg/settings.yml')$dev_frac,
-  test_frac=yaml::rea_yaml('lib/cfg/settings.yml')$dev_frac) {
+  test_frac=yaml::read_yaml('lib/cfg/settings.yml')$dev_frac) {
 
   # make sure the fractions are reasonable
   if(dev_frac + test_frac >= 1) stop('dev_frac + test_frac must be < 1')
@@ -335,7 +335,7 @@ split_scale_nn_data <- function(formatted,
   dat$scales <- attr(dat$train_input, 'scaled:scale')
   dat$test_input <- scale(dat$test_input, center=dat$centers, scale=dat$scales)
   dat$dev_input <- scale(dat$dev_input, center=dat$centers, scale=dat$scales)
-
-  return(dat)
+  saveRDS(object = dat, file = as_data_file(ind_file))
+  gd_put(remote_ind = ind_file)
 }
 

@@ -41,8 +41,12 @@ create_format_task_plan <- function(site_ids, ind_dir, settings_yml = "lib/cfg/s
                                       },
                                       depends = settings_yml)
   step3_split_scale <- create_task_step(step_name = "split_scale_nn_data",
-                                        command = function(task_name, ...) {
-                                          sprintf("split_scale_nn_data(%s_format_nn_data)", task_name)
+                                        target_name = function(task_name, ...) {
+                                          sprintf("1_format/out/%s_split_scaled.rds.ind", task_name)
+                                        },
+                                        command = function(task_name, target_name, ...) {
+                                          sprintf("split_scale_nn_data(%s_format_nn_data, ind_file = \'%s\')",
+                                                  task_name, target_name)
                                         },
                                         depends = settings_yml)
   format_task_plan <- create_task_plan(task_names = site_ids,
@@ -56,5 +60,6 @@ create_format_task_plan <- function(site_ids, ind_dir, settings_yml = "lib/cfg/s
 create_format_task_makefile <- function(task_plan, makefile, ...) {
   packages <- c("dplyr", "tidyr")
   sources <- "1_format/src/combine_nn_inputs.R"
-  create_task_makefile(task_plan = task_plan, makefile = makefile, ...)
+  create_task_makefile(task_plan = task_plan, makefile = makefile,
+                       packages = packages, sources = sources, ...)
 }
