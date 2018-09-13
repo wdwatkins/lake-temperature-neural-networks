@@ -1,35 +1,26 @@
 target_default: 1_format
 
 packages:
-  - dplyr
-  - tidyr
+  - zeallot
+  - readr
 
 sources:
   - 1_format/src/combine_nn_inputs.R
+  - 1_format/src/format_tasks.R
 
 targets:
   1_format:
     depends:
-      - split_scaled
+      - 1_format/log/1_format_data_tasks.ind
 
-  # combine_nn_data has 3 .ind files as arguments but right now only uses them
-  # to determine the names of data files, which I promise exist. These are really
-  # just placeholders until we can connect up the start of this pipeline so that
-  # data files come from other pipelines, at which point the I() around those .ind
-  # files will no longer be appropriate and we should call sc_retrieve within
-  # combine_nn_data.
-  combined:
-    command: combine_nn_data(
-      obs_ind=I('1_format/tmp/millelacs_obs.csv.ind'),
-      glm_preds_ind=I('1_format/in/millelacs_output.nc.ind'),
-      meteo_ind=I('1_format/in/millelacs_meteo.feather.ind'),
-      min_obs_per_depth=I(100),
-      min_obs_per_date=I(1))
+  site_ids:
+    command: get_site_ids(file = 'lib/crosswalks/pipeline_3_lakes.csv')
 
+  format_data_task_plan:
+    command: create_format_task_plan(site_ids, ind_dir = I("1_format"))
 
+  1_format_tasks.yml:
+    command: create_format_task_makefile(task_plan = format_data_task_plan, makefile = target_name, ind_complete=TRUE)
 
-  formatted:
-    command: format_nn_data(combined, structure=I('NN'))
-
-  split_scaled:
-    command: split_scale_nn_data(formatted)
+  1_format/log/1_format_data_tasks.ind:
+    command: loop_tasks(task_plan = format_data_task_plan, task_makefile = '1_format_tasks.yml', num_tries=1)
