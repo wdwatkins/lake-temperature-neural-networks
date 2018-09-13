@@ -16,8 +16,7 @@ get_input_file_names <- function(site_id = task_name) {
 }
 
 #assume task_name == site_id
-create_format_task_plan <- function(site_ids, ind_dir) {
-
+create_format_task_plan <- function(site_ids, ind_dir, settings_yml = "lib/cfg/settings.yml") {
   # combine_nn_data has 3 .ind files as arguments but right now only uses them
   # to determine the names of data files, which I promise exist. These are really
   # just placeholders until we can connect up the start of this pipeline so that
@@ -39,11 +38,13 @@ create_format_task_plan <- function(site_ids, ind_dir) {
   step2_formatted <- create_task_step(step_name = "format_nn_data",
                                       command = function(task_name, ...) {
                                         sprintf("format_nn_data(%s_combine_nn_data, structure=I('NN'))",task_name)
-                                      })
+                                      },
+                                      depends = settings_yml)
   step3_split_scale <- create_task_step(step_name = "split_scale_nn_data",
                                         command = function(task_name, ...) {
                                           sprintf("split_scale_nn_data(%s_format_nn_data)", task_name)
-                                        })
+                                        },
+                                        depends = settings_yml)
   format_task_plan <- create_task_plan(task_names = site_ids,
                                        task_steps = list(step1_combined, step2_formatted,
                                                          step3_split_scale),

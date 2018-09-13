@@ -295,7 +295,8 @@ format_nn_data <- function(inputs, structure=c('NN','SNN','RNN','RSNN')) {
 #' @param dev_frac fraction of dataset to assign to development (validation)
 #' @param test_frac fraction of dataset to reserve for testing
 split_scale_nn_data <- function(formatted,
-  dev_frac=0.2, test_frac=0.2) {
+  dev_frac=yaml::read_yaml('lib/cfg/settings.yml')$dev_frac,
+  test_frac=yaml::rea_yaml('lib/cfg/settings.yml')$dev_frac) {
 
   # make sure the fractions are reasonable
   if(dev_frac + test_frac >= 1) stop('dev_frac + test_frac must be < 1')
