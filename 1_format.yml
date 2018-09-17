@@ -3,6 +3,7 @@ target_default: 1_format
 packages:
   - zeallot
   - readr
+  - yaml
 
 sources:
   - 1_format/src/format_tasks.R
@@ -11,6 +12,16 @@ targets:
   1_format:
     depends:
       - 1_format/log/1_format_tasks.ind
+
+  # read and subset the NN settings
+  settings:
+    command: yaml.load_file('lib/cfg/settings.yml')
+  combine_cfg:
+    command: settings[I(c('min_obs_per_depth', 'min_obs_per_date'))]
+  format_cfg:
+    command: settings[I(c('structure'))]
+  split_scale_cfg:
+    command: settings[I(c('dev_frac', 'test_frac'))]
 
   site_ids:
     command: get_site_ids(file = 'lib/crosswalks/pipeline_3_lakes.csv')
