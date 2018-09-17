@@ -1,4 +1,4 @@
-evaluate_model <- function(model_list, dat, rmd_file) {
+evaluate_model <- function(model_list, dat, rmd_file, lake_name) {
   rmarkdown::render(
     input = rmd_file,
     output_format = "html_document",

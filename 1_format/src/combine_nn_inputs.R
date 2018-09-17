@@ -43,8 +43,8 @@ combine_nn_data <- function(
   obs_ind='1_format/tmp/mendota_obs.csv.ind',
   glm_preds_ind='1_format/in/output.nc.ind',
   meteo_ind='1_format/in/Mendota_meteo.feather.ind',
-  min_obs_per_depth=100,
-  min_obs_per_date=1,
+  min_obs_per_depth=yaml::read_yaml('lib/cfg/settings.yml')$min_obs_per_depth,
+  min_obs_per_date=yaml::read_yaml('lib/cfg/settings.yml')$min_obs_per_date,
   common_depths) {
 
   # convert ind files to data files
@@ -294,8 +294,9 @@ format_nn_data <- function(inputs, structure=c('NN','SNN','RNN','RSNN')) {
 #'   the model-ready neural network inputs and outputs, respectively
 #' @param dev_frac fraction of dataset to assign to development (validation)
 #' @param test_frac fraction of dataset to reserve for testing
-split_scale_nn_data <- function(formatted,
-  dev_frac=0.2, test_frac=0.2) {
+split_scale_nn_data <- function(formatted, ind_file,
+  dev_frac=yaml::read_yaml('lib/cfg/settings.yml')$dev_frac,
+  test_frac=yaml::read_yaml('lib/cfg/settings.yml')$dev_frac) {
 
   # make sure the fractions are reasonable
   if(dev_frac + test_frac >= 1) stop('dev_frac + test_frac must be < 1')
@@ -334,7 +335,7 @@ split_scale_nn_data <- function(formatted,
   dat$scales <- attr(dat$train_input, 'scaled:scale')
   dat$test_input <- scale(dat$test_input, center=dat$centers, scale=dat$scales)
   dat$dev_input <- scale(dat$dev_input, center=dat$centers, scale=dat$scales)
-
-  return(dat)
+  saveRDS(object = dat, file = as_data_file(ind_file))
+  gd_put(remote_ind = ind_file)
 }
 

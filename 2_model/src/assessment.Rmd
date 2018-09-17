@@ -1,5 +1,5 @@
 ---
-title: "Model `r model_list$id` Assessment"
+title: "Model `r model_list$id` Assessment - `r lake_name`"
 author: "Alison Appling"
 date: "`r base::format(base::Sys.time(), '%B %d, %Y')`"
 output: html_document
@@ -23,6 +23,25 @@ model_list$network <- unserialize_model(model_list$serialized)
 summary(model_list$network)
 ```
 
+# Training/development/test data split
+```{r splits, echo = FALSE}
+n_train <- length(dat$train_target)
+n_test <- length(dat$test_target)
+n_dev <- length(dat$dev_target)
+n_total <- n_train + n_test + n_dev
+tibble(split = c("train", "dev", "test"), n = c(n_train, n_dev, n_test),
+percent = round(100*c(n_train/n_total, n_dev/n_total, n_test/n_total)))
+
+all_obs_mat <- rbind(dat$train_input, dat$dev_input, dat$test_input) 
+obs_splits_df <- as_tibble(all_obs_mat) %>% select(Depth) %>% 
+  mutate(Depth = Depth*dat$scales[['Depth']] + dat$centers[['Depth']], 
+         Date = as.Date(rownames(all_obs_mat), format = "%Y%m%d"),
+         split = c(rep("train", n_train), rep("dev", n_dev), rep("test", n_test)))
+ggplot(obs_splits_df, aes(x=Date, y=Depth)) +
+  geom_point(aes(col=split)) + scale_y_reverse() + theme_classic() +
+  theme(panel.background = element_rect(fill='gray95')) +
+  ggtitle('Observation splits by date and depth')
+```
 # Fitting trajectory
 
 ```{r summarize_history, echo=FALSE}
@@ -178,3 +197,6 @@ preds %>%
   theme_classic() +
   ggtitle('Predictions vs Observations (all years)')
 ```
+
+# Density instabilities
+Coming soon
