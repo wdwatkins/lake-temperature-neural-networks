@@ -27,24 +27,27 @@
 #'   timeseries of days for the meteorological data, and optionally a single GLM
 #'   prediction at each depth and date for which we have a matching observation.
 #'
+#' @param combined_ind name of indicator file where output should be
+#'   saved/indicated
 #' @param obs_ind indicator file of observations, with at least columns
 #'   `DateTime`, `Depth`, and `temp`
 #' @param glm_preds_ind indicator file of temperature predictions from GLM
 #' @param meteo_ind indicator file of meteorological data
-#' @param min_obs_per_depth minimum number of observations at a depth for that
-#'   depth to qualify as a "common" depth and to be included in the resampling
-#'   of GLM predictions to specific depths
-#' @param min_obs_per_date minimum number of observations at the common depths
-#'   on a date to justify including that date in the input
-#' @param common_depths as an alternative to `min_obs_per_depth`, a vector of
+#' @param combine_cfg list containing configuration information, with 2 elements
+#'   so far: min_obs_per_depth = minimum number of observations at a depth for
+#'   that depth to qualify as a "common" depth and to be included in the
+#'   resampling of GLM predictions to specific depths. min_obs_per_date =
+#'   minimum number of observations at the common depths on a date to justify
+#'   including that date in the input.
+#' @param common_depths as an alternative to `combine_cfg$min_obs_per_depth`, a vector of
 #'   common depths (in m) can be specified directly. If `common_depths` is given
-#'   then `min_obs_per_depth` will be ignored
+#'   then `combine_cfg$min_obs_per_depth` will be ignored
 combine_nn_data <- function(
+  combined_ind='1_format/tmp/inputs.rds.ind',
   obs_ind='1_format/tmp/mendota_obs.csv.ind',
   glm_preds_ind='1_format/in/output.nc.ind',
   meteo_ind='1_format/in/Mendota_meteo.feather.ind',
-  min_obs_per_depth=yaml::read_yaml('lib/cfg/settings.yml')$min_obs_per_depth,
-  min_obs_per_date=yaml::read_yaml('lib/cfg/settings.yml')$min_obs_per_date,
+  combine_cfg = list(min_obs_per_depth=100, min_obs_per_date=1),
   common_depths) {
 
   # convert ind files to data files
@@ -64,7 +67,7 @@ combine_nn_data <- function(
     common_depths <- obs %>%
       group_by(Depth) %>%
       summarize(NumObs = length(ObsTemp)) %>%
-      filter(NumObs >= min_obs_per_depth) %>%
+      filter(NumObs >= combine_cfg$min_obs_per_depth) %>%
       pull(Depth)
   }
   # identify the "common dates", those dates that include at least N
@@ -73,7 +76,7 @@ combine_nn_data <- function(
     filter(Depth %in% common_depths) %>%
     group_by(Date) %>%
     summarize(NumObs = length(ObsTemp)) %>%
-    filter(NumObs >= min_obs_per_date) %>%
+    filter(NumObs >= combine_cfg$min_obs_per_date) %>%
     pull(Date)
   obs_dates <- unique(obs$Date)
 
@@ -140,7 +143,11 @@ combine_nn_data <- function(
     obs=obs,
     glm_preds=glm_preds,
     meteo=meteo)
-  return(inputs)
+
+  # write and indicate (locally)
+  combined_rds <- as_data_file(combined_ind)
+  saveRDS(inputs, combined_rds)
+  sc_indicate(combined_ind, data_file=combined_rds)
 }
 
 #' add those features reported by the paper Anuj led
@@ -223,11 +230,20 @@ remove_rain_offset <- function(meteo) {
 #'   timeseries of days for the meteorological data, and optionally a single GLM
 #'   prediction at each depth and date for which we have a matching observation.
 #'
-#' @param inputs list of glm_preds, meteo, and obs data_frames
-#' @param structure type of NN to format for
-format_nn_data <- function(inputs, structure=c('NN','SNN','RNN','RSNN')) {
+#' @param formatted_ind name of indicator file where output should be
+#'   saved/indicated
+#' @param combined_ind indicator file of rds file containing list of glm_preds,
+#'   meteo, and obs data_frames
+#' @param format_cfg list containing configuration information, with 1 element
+#'   so far: structure = type of NN to format for
+format_nn_data <- function(formatted_ind, combined_ind, format_cfg) {
 
-  structure <- match.arg(structure)
+  # read in the model/data configuration
+  stopifnot(format_cfg$structure %in% c('NN','SNN','RNN','RSNN'))
+  structure <- format_cfg$structure # simplify b/c we'll use it a lot
+
+  # read in the data
+  inputs <- readRDS(sc_retrieve(combined_ind, '1_format_tasks.yml'))
 
   glm_preds <- inputs$glm_preds
   if(structure == 'NN') {
@@ -281,24 +297,35 @@ format_nn_data <- function(inputs, structure=c('NN','SNN','RNN','RSNN')) {
   mat_out <- as.matrix(all_out)
   rownames(mat_out) <- all_out_names
 
-  return(list(
+  formatted <- list(
     input = mat_in,
     target = mat_out
-  ))
+  )
+
+  # write and indicate
+  formatted_rds <- as_data_file(formatted_ind)
+  saveRDS(formatted, formatted_rds)
+  sc_indicate(formatted_ind, data_file=formatted_rds)
 }
 
 #' Divide the NN inputs and targets into training, development (validation), and
 #' test fractions
 #'
-#' @param formatted list with matrix elements `input` and `target` containing
-#'   the model-ready neural network inputs and outputs, respectively
-#' @param dev_frac fraction of dataset to assign to development (validation)
-#' @param test_frac fraction of dataset to reserve for testing
-split_scale_nn_data <- function(formatted, ind_file,
-  dev_frac=yaml::read_yaml('lib/cfg/settings.yml')$dev_frac,
-  test_frac=yaml::read_yaml('lib/cfg/settings.yml')$dev_frac) {
+#' @param formatted_ind indicator file of rds file containing list with matrix
+#'   elements `input` and `target` containing the model-ready neural network
+#'   inputs and outputs, respectively
+#' @param ind_file name of indicator file where output should be saved/indicated
+#' @param split_scale_cfg list of configuration options. currently contains 2
+#'   elements: dev_frac =  fraction of dataset to assign to development
+#'   (validation). test_frac = fraction of dataset to reserve for testing
+split_scale_nn_data <- function(formatted_ind, ind_file, split_scale_cfg=list(dev_frac=0.2, test_frac=0.2)) {
 
-  # make sure the fractions are reasonable
+  # read in the data
+  formatted <- readRDS(sc_retrieve(formatted_ind, '1_format_tasks.yml'))
+
+  # unpack the config list and make sure the fractions are reasonable
+  dev_frac <- split_scale_cfg$dev_frac
+  test_frac <- split_scale_cfg$test_frac
   if(dev_frac + test_frac >= 1) stop('dev_frac + test_frac must be < 1')
   train_frac <- 1 - dev_frac - test_frac
 
@@ -335,6 +362,8 @@ split_scale_nn_data <- function(formatted, ind_file,
   dat$scales <- attr(dat$train_input, 'scaled:scale')
   dat$test_input <- scale(dat$test_input, center=dat$centers, scale=dat$scales)
   dat$dev_input <- scale(dat$dev_input, center=dat$centers, scale=dat$scales)
+
+  # save and post
   saveRDS(object = dat, file = as_data_file(ind_file))
   gd_put(remote_ind = ind_file)
 }
