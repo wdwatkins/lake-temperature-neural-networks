@@ -15,16 +15,16 @@ targets:
       - model_01
 
   model_01:
-    command: run_model_01(split_scaled)
+    command: run_model_01(split_scaled_nn)
   model_01_eval:
-    command: evaluate_model(model_01, split_scaled, rmd_file="2_model/src/assessment.Rmd")
+    command: evaluate_model(model_01, split_scaled_nn, rmd_file="2_model/src/assessment.Rmd")
 
   model_02:
-    command: run_model_02(split_scaled)
+    command: run_model_02(split_scaled_nn)
   model_02_eval:
-    command: evaluate_model(model_02, split_scaled, rmd_file="2_model/src/assessment.Rmd")
+    command: evaluate_model(model_02, split_scaled_nn, rmd_file="2_model/src/assessment.Rmd")
 
   model_03:
-    command: run_model_03(split_scaled)
+    command: run_model_03(split_scaled_nn)
   model_03_eval:
-    command: evaluate_model(model_03, split_scaled, rmd_file="2_model/src/assessment.Rmd")
+    command: evaluate_model(model_03, split_scaled_nn, rmd_file="2_model/src/assessment.Rmd")

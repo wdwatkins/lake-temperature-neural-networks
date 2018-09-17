@@ -10,7 +10,10 @@ sources:
 targets:
   1_format:
     depends:
-      - split_scaled
+      - split_scaled_nn
+      - split_scaled_snn
+      - split_scaled_rnn
+      - split_scaled_rsnn
 
   # combine_nn_data has 3 .ind files as arguments but right now only uses them
   # to determine the names of data files, which I promise exist. These are really
@@ -26,8 +29,22 @@ targets:
       min_obs_per_depth=I(100),
       min_obs_per_date=I(1))
 
-  formatted:
+  formatted_nn:
     command: format_nn_data(combined, structure=I('NN'))
+  split_scaled_nn:
+    command: split_scale_nn_data(formatted_nn)
 
-  split_scaled:
-    command: split_scale_nn_data(formatted)
+  formatted_snn:
+    command: format_nn_data(combined, structure=I('SNN'))
+  split_scaled_snn:
+    command: split_scale_nn_data(formatted_snn)
+
+  formatted_rnn:
+    command: format_nn_data(combined, structure=I('RNN'))
+  split_scaled_rnn:
+    command: split_scale_nn_data(formatted_rnn)
+
+  formatted_rsnn:
+    command: format_nn_data(combined, structure=I('RSNN'))
+  split_scaled_rsnn:
+    command: split_scale_nn_data(formatted_rsnn)
