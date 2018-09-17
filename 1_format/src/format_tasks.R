@@ -23,43 +23,88 @@ create_format_task_plan <- function(site_ids, ind_dir, settings_yml = "lib/cfg/s
   # data files come from other pipelines, at which point the I() around those .ind
   # files will no longer be appropriate and we should call sc_retrieve within
   # combine_nn_data.
-  step1_combined <- create_task_step(step_name = "combine_nn_data",
-    command = function(task_name, ...){
-      c(obs_file, glm_preds_file, meteo_file) %<-% get_input_file_names(task_name)
-      sprintf("combine_nn_data(obs_ind = I(\'%s\'), glm_preds_ind=I(\'%s\'),
-              meteo_ind = I(\'%s\'))",
-              obs_file, glm_preds_file, meteo_file)
+  task_steps <- list(
+    # step1a_combine_ind
+    create_task_step(
+      step_name = "combine_ind",
+      target_name = function(task_name, ...) {
+        sprintf("1_format/tmp/%s_combined.rds.ind", task_name)
       },
-    depends = function(task_name, ...) {
-      c(obs_file, glm_preds_file, meteo_file) %<-% get_input_file_names(task_name)
-      as_data_file(c(obs_file, glm_preds_file, meteo_file))
-    })
+      command = function(task_name, ...){
+        c(obs_file, glm_preds_file, meteo_file) %<-% get_input_file_names(task_name)
+        psprintf(
+          "combine_nn_data(",
+          "combined_ind = target_name,",
+          "obs_ind = I('%s')," = obs_file, # we should take away the I() if we ever actually have these .ind files
+          "glm_preds_ind = I('%s')," = glm_preds_file,
+          "meteo_ind = I('%s')," = meteo_file,
+          "combine_cfg = combine_cfg)")
+      }),
+    # step1b_combine_rds
+    create_task_step(
+      step_name = "combine_rds",
+      target_name = function(steps, ...) {
+        as_data_file(steps[['combine_ind']]$target_name)
+      },
+      command = function(steps, ...) {
+        sprintf("require_local('%s')", steps[['combine_ind']]$target_name)
+      }),
 
-  step2_formatted <- create_task_step(step_name = "format_nn_data",
-                                      command = function(steps,...) {
-                                        sprintf("format_nn_data(%s, structure=I('NN'))",steps[['combine_nn_data']]$target_name)
-                                      },
-                                      depends = settings_yml)
-  step3_split_scale <- create_task_step(step_name = "split_scale_nn_data",
-                                        target_name = function(task_name, ...) {
-                                          sprintf("1_format/out/%s_split_scaled.rds.ind", task_name)
-                                        },
-                                        command = function(steps, target_name, ...) {
-                                          sprintf("split_scale_nn_data(%s, ind_file = \'%s\')",
-                                                  steps[['format_nn_data']]$target_name, target_name)
-                                        },
-                                        depends = settings_yml)
-  format_task_plan <- create_task_plan(task_names = site_ids,
-                                       task_steps = list(step1_combined, step2_formatted,
-                                                         step3_split_scale),
-                                       final_steps="split_scale_nn_data",
-                                       ind_dir = "1_format/log")
+    # step2a_format_ind
+    create_task_step(
+      step_name = "format_ind",
+      target_name = function(task_name, ...) {
+        sprintf("1_format/tmp/%s_formatted.rds.ind", task_name)
+      },
+      command = function(steps,...) {
+        psprintf(
+          "format_nn_data(",
+          "formatted_ind = target_name,",
+          "combined_ind = '%s'," = steps[['combine_ind']]$target_name,
+          "format_cfg = format_cfg)")
+      }),
+    # step2b_format_rds
+    create_task_step(
+      step_name = "format_rds",
+      target_name = function(steps, ...) {
+        as_data_file(steps[['format_ind']]$target_name)
+      },
+      command = function(steps, ...) {
+        sprintf("require_local('%s')", steps[['format_ind']]$target_name)
+      }),
+
+    # step3a_split_scale_ind
+    create_task_step(
+      step_name = "split_scale_ind",
+      target_name = function(task_name, ...) {
+        sprintf("1_format/out/%s_split_scaled.rds.ind", task_name)
+      },
+      command = function(steps, target_name, ...) {
+        psprintf(
+          "split_scale_nn_data(",
+          "ind_file = target_name,",
+          "formatted_ind = '%s',"=steps[['format_ind']]$target_name,
+          "split_scale_cfg = split_scale_cfg)")
+      })
+    # leave the gd_get for 2_model_tasks.yml
+  )
+
+  format_task_plan <- create_task_plan(
+    task_names = site_ids,
+    task_steps = task_steps,
+    final_steps = "split_scale_ind",
+    ind_dir = "1_format/log",
+    add_complete = FALSE)
+
   return(format_task_plan)
 }
 
 create_format_task_makefile <- function(task_plan, makefile, ...) {
-  packages <- c("dplyr", "tidyr")
-  sources <- "1_format/src/combine_nn_inputs.R"
-  create_task_makefile(task_plan = task_plan, makefile = makefile,
-                       packages = packages, sources = sources, ...)
+  create_task_makefile(
+    task_plan = task_plan,
+    makefile = makefile,
+    packages = c("dplyr", "tidyr"),
+    sources = c("lib/src/require_local.R", "1_format/src/combine_nn_inputs.R"),
+    include = "1_format.yml",
+    ...)
 }

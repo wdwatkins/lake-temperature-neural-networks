@@ -6,6 +6,7 @@ packages:
   - yaml
 
 sources:
+  - lib/src/psprintf.R
   - 1_format/src/format_tasks.R
 
 targets:
