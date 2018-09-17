@@ -3,8 +3,10 @@
 .RData
 .Ruserdata
 .remake
+*.rds
 1_format/in
 1_format/tmp
+build/status/MV9mb3JtYXQvdG1wL25oZF*
 2_model/doc
 .httr-oauth
 *tasks.yml

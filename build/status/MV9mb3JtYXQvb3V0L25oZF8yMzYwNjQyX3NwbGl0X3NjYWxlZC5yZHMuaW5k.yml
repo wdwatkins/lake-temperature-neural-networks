@@ -1,0 +1,13 @@
+version: 0.3.0
+name: 1_format/out/nhd_2360642_split_scaled.rds.ind
+type: file
+hash: 9f027d108064efc87bf5b45eb6fa0622
+time: 2018-09-17 21:01:37 UTC
+depends:
+  1_format/tmp/nhd_2360642_formatted.rds.ind: f8768adfdf7e004e4573f431a70b842d
+  split_scale_cfg: 8ef408f9360c123448fb23f7b6713353
+fixed: 5ffb62c1d8be5107ba4f55b18716b4e4
+code:
+  functions:
+    split_scale_nn_data: 25107e79360f7318142f51c36ae7eefd
+
