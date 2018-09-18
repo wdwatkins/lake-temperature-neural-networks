@@ -8,3 +8,7 @@ psprintf <- function(..., sep='\n      ') {
   }, string=names(args), variables=args)
   paste(strs, collapse=sep)
 }
+
+get_site_ids <- function(file, comment = "#") {
+  read_csv(file, comment = comment)$site_id
+}
