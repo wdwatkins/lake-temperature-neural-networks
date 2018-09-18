@@ -1,0 +1,12 @@
+version: 0.3.0
+name: 1_format/log/1_format_tasks.ind
+type: file
+hash: b0862b86f03a3667cc0cf3cd82baf302
+time: 2018-09-17 21:05:48 UTC
+depends:
+  format_data_task_plan: cd0d4d3755e026ab0dc834b1337d1989
+  1_format_tasks.yml: e7fc0c5dc8701075337000656b09bcf5
+fixed: e6f1d209cfbefa8645f5dabb9d5e08c5
+code:
+  functions: {}
+
