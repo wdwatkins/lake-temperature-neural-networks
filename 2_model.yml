@@ -1,15 +1,15 @@
 target_default: 2_model
 
 packages:
-  - dplyr
   - tidyr
-  - keras
+  - stringr
 
 sources:
   - lib/src/utils.R
   - 2_model/src/models.R
   - 2_model/src/model_tasks.R
   - 2_model/src/evaluate.R
+  - 2_model/src/fetch_formatted_data_tasks.R
 
 targets:
   2_model:
@@ -19,10 +19,19 @@ targets:
   settings:
     command: yaml.load_file('lib/cfg/settings.yml')
   model_cfg:
-    command: settings[I(c('model_functions'))]
+    command: settings[[I('model_functions')]]
 
   site_ids:
     command: get_site_ids(file = 'lib/crosswalks/pipeline_3_lakes.csv')
+
+  fetch_formatted_data_task_plan:
+    command: create_fetch_formatted_data_task_plan(site_ids, ind_dir = I("2_model"))
+
+  2_fetch_formatted_data_tasks.yml:
+    command: create_task_makefile(makefile=target_name, task_plan = fetch_formatted_data_task_plan, include = "2_model.yml")
+
+  2_model/log/2_fetch_formatted_data_tasks.ind:
+    command: loop_tasks(task_plan = fetch_formatted_data_task_plan, task_makefile = "2_fetch_formatted_data_tasks.yml", num_tries = 2)
 
   model_task_plan:
     command: create_model_task_plan(site_ids, model_cfg, ind_dir = I("2_model"))

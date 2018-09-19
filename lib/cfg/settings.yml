@@ -8,3 +8,8 @@ structure: 'NN'
 # split_scale_nn_data
 dev_frac: 0.20
 test_frac: 0.20
+
+# 2_model
+model_functions:
+  - run_model_01
+  - run_model_02

@@ -1,57 +1,45 @@
-create_model_and_eval_steps <- function(model_functions) {
-  model_steps <- NULL
-  for(func in model_functions) {
-    print(func)
-    run_step <- create_task_step(step_name = paste0(func, "_ind"),
-                                 target_name = function(steps, task_name, ...) {
-                                   sprintf("2_model/out/%s_%s_model_out.rds.ind", steps[[1]]$step_name, task_name)
-                                 },
-                                 command = function(steps, ...) {
-                                   sprintf("%s(%s)", func, steps[['split_scale_rds']]$target_name)
-                                 })
-    run_get_local_step <- create_task_step(step_name = paste0(func, "_rds"),
-                                           target_name = function(steps, task_name, func = func, ...) {
-                                             sprintf("2_model/out/%s_%s_model_out.rds", func, task_name)
-                                           },
-                                           command = function(steps, ...) {
-                                             #print(lapply(steps, `[`, "step_name"))
-                                             run_ind_step <- paste0(func, "_ind")
-                                             #print(steps[[run_ind_step]]$target_name)
-                                             #print(run_ind_step)
-                                             sprintf("gd_get(%s)", steps[[run_ind_step]]$target_name)
-                                           })
-    # eval_step <- create_task_step(step_name = paste0("evaluate_", func),
-    #                               target_name = function(task_name, ...) {
-    #                                 sprintf("2_model/doc/%s_")
-    #                               })
-    if(!is.null(model_steps)) {
-      model_steps <- c(model_steps, list(run_step, run_get_local_step))
-    } else {
-      model_steps <- list(run_step, run_get_local_step)
-    }
-
-  }
-  return(model_steps)
+#split task name into site id (NHD) and model function
+get_model_func_site_id <- function(task_name) {
+  model_func <- gsub(pattern = "nhd_[1-9]*_", replacement = "", x = task_name)
+  site_id <- str_extract(pattern = "nhd_[1-9]*", string = task_name)
+  return(list(site_id, model_func))
 }
 
-
-create_model_task_plan <- function(site_ids, settings, ind_dir) {
-  task_steps <- c(
-    list(create_task_step(
-      step_name = "split_scale_rds",
-      target_name = function(steps, task_name, ...) {
-        sprintf("1_format/out/%s_split_scaled.rds", task_name)
-      },
-      command = function(steps, task_name, ...) {
-        sprintf("gd_get('%s')", sprintf("1_format/out/%s_split_scaled.rds.ind", task_name))
-      })),
-    create_model_and_eval_steps(settings[['model_functions']])
-  )
-  saveRDS(task_steps, 'task_steps.rds')
+create_model_task_plan <- function(site_ids, model_function_names, ind_dir) {
+  model_function_names <- as.character(model_function_names)
+  task_steps <- list(
+    create_task_step(step_name = "model_output_ind",
+                     target_name = function(task_name, ...) {
+                       sprintf("2_model/out/%s.output.rds.ind", task_name)
+                     },
+                     command = function(task_name, ...) {
+                       c(site_id, model_func) %<-% get_model_func_site_id(task_name)
+                       sprintf("%s(1_format/out/%s_split_scaled.rds.ind)", model_func, site_id)
+                     }),
+    create_task_step(step_name = "model_output_rds",
+                     target_name = function(steps, ...) {
+                       as_data_file(steps[[1]]$target_name)
+                     },
+                     command = "gd_get(target_name)"),
+    create_task_step(step_name = "evaluate",
+                     target_name = function(task_name, ...) {
+                       sprintf("2_model/doc/%s.html", task_name)
+                     },
+                     command = function(task_name, steps, ...) {
+                       c(site_id, model_func) %<-% get_model_func_site_id(task_name)
+                       model_output <- steps[[1]]$target_name
+                       formatted_data <- sprintf("1_format/out/%s_spli_scaled.rds.ind", site_id)
+                       sprintf("evaluate_model(%s, %s, rmd_file='2_model/src/assessment.Rmd')", model_output, formatted_data)
+                     }))
+  print(length(model_function_names))
+  print(model_function_names)
+  task_names <- expand.grid(site_ids, model_function_names) %>%
+    unite(col = "task_names", Var1, Var2, sep = "_") %>% .$task_names
+  saveRDS(task_names, "task_names.rds")
   model_task_plan <- create_task_plan(
-    task_names = site_ids,
+    task_names = task_names,
     task_steps = task_steps,
-    #final_steps = "",
+    final_steps = "evaluate",
     ind_dir = "2_model/log",
     add_complete = FALSE)
 
