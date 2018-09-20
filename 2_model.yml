@@ -6,6 +6,7 @@ packages:
 
 sources:
   - lib/src/utils.R
+  - lib/src/require_local.R
   - 2_model/src/models.R
   - 2_model/src/model_tasks.R
   - 2_model/src/evaluate.R

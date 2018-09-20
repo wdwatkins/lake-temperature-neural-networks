@@ -1,5 +1,6 @@
 run_model_01 <- function(data_ind, out_ind) {
-  dat <- as_data_file(data_ind)
+  dat <- readRDS(as_data_file(data_ind))
+
   # configure
   l2_lambda <- 0.5 #regularization factors, L1 and L2 regularization
   l1_lambda <- 0.5
@@ -37,7 +38,7 @@ run_model_01 <- function(data_ind, out_ind) {
 }
 
 run_model_02 <- function(data_ind, out_ind) {
-  dat <- as_data_file(data_ind)
+  dat <- readRDS(as_data_file(data_ind))
   # configure
   reg <- regularizer_l2(0.5)
   init <- initializer_random_uniform(0,1)
@@ -86,7 +87,7 @@ run_model_02 <- function(data_ind, out_ind) {
 }
 
 run_model_03 <- function(data_ind, out_ind) {
-  dat <- as_data_file(data_ind)
+  dat <- readRDS(as_data_file(data_ind))
   # configure
   reg <- regularizer_l2(0.5)
   init <- initializer_random_uniform(0,1)

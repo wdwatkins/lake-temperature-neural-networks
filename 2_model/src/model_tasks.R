@@ -20,7 +20,7 @@ create_model_task_plan <- function(site_ids, model_function_names, ind_dir) {
                      target_name = function(steps, ...) {
                        as_data_file(steps[[1]]$target_name)
                      },
-                     command = "require_local(target_name)",
+                     command = "require_local_as_ind(target_name)",
                      depends = function(steps, ...) {
                        steps[[1]]$target_name
                      }),
@@ -32,7 +32,7 @@ create_model_task_plan <- function(site_ids, model_function_names, ind_dir) {
                        c(site_id, model_func) %<-% get_model_func_site_id(task_name)
                        model_output <- steps[[1]]$target_name
                        formatted_data <- sprintf("1_format/out/%s_split_scaled.rds.ind", site_id)
-                       sprintf("evaluate_model(model_list_ind = I(\'%s\'), dat_ind = I(\'%s\'), rmd_file='2_model/src/assessment.Rmd', site_id = \'%s\', output_html = target_name)",
+                       sprintf("evaluate_model(output_html = target_name, model_list_ind = \'%s\', dat_ind = \'%s\', rmd_file='2_model/src/assessment.Rmd', site_id = I(\'%s\'))",
                                model_output, formatted_data, site_id)
                        },
                      depends = function(steps, ...) {
@@ -56,8 +56,8 @@ create_model_task_makefile <- function(task_plan, makefile, ...) {
   create_task_makefile(
     task_plan = task_plan,
     makefile = makefile,
-    packages = c("dplyr", "tidyr", "keras"),
-    sources = c("lib/src/require_local.R", "2_model/src/models.R"),
+    packages = c("dplyr", "tidyr", "keras", "scipiper"),
+    source = c("lib/src/require_local.R", "2_model/src/models.R", "lib/src/utils.R", "lib/src/require_local.R"),
     include = "2_model.yml",
     ...)
 }

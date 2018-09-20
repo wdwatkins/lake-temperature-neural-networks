@@ -13,10 +13,10 @@ get_site_ids <- function(file, comment = "#") {
   read_csv(file, comment = comment)$site_id
 }
 
-lookup_lake_name <- function(site_id) {
+lookup_lake_name <- function(lake_site_id) {
   #switch to full lake name crosswalk in the future
-  lake_name <- read_csv("lib/crosswalks/pipeline_3_lakes.csv") %>% filter(site_id == site_id) %>%
+  lake_name <- read_csv("lib/crosswalks/pipeline_3_lakes.csv", comment = "#") %>% filter(site_id == lake_site_id) %>%
     .$name %>% unique()
-  assertthat::assert_that(length(lake_name == 1))
+  assertthat::assert_that(length(lake_name) == 1)
   return(lake_name)
 }
