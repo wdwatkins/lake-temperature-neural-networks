@@ -14,6 +14,7 @@ sources:
 targets:
   2_model:
     depends:
+      - 2_model/log/2_model_tasks.ind
 
   # read and subset the NN settings
   settings:
@@ -39,8 +40,8 @@ targets:
   2_model_tasks.yml:
     command: create_model_task_makefile(task_plan = model_task_plan, makefile = target_name, ind_complete = TRUE)
 
-  #2_model/log/2_model_tasks.ind:
-  #  command: loop_tasks(task_plan = model_task_plan, task_makefile = '2_model_tasks.yml', num_tries = 1)
+  2_model/log/2_model_tasks.ind:
+    command: loop_tasks(task_plan = model_task_plan, task_makefile = '2_model_tasks.yml', num_tries = 1)
 
 
 
