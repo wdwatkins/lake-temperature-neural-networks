@@ -3,6 +3,8 @@ target_default: 2_model
 packages:
   - tidyr
   - stringr
+  - dplyr
+  - zeallot
 
 sources:
   - lib/src/utils.R
