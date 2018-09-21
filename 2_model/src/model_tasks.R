@@ -21,10 +21,7 @@ create_model_task_plan <- function(site_ids, model_function_names) {
                        as_data_file(steps[[1]]$target_name)
                      },
                      command = function(steps, ...) {
-                       steps[[1]]$target_name
-                     },
-                     depends = function(steps, ...) {
-                       steps[[1]]$target_name
+                       sprintf("require_local(\'%s\')", steps[[1]]$target_name)
                      }),
     create_task_step(step_name = "evaluate",
                      target_name = function(task_name, ...) {
