@@ -30,13 +30,13 @@ targets:
     command: create_fetch_formatted_data_task_plan(site_ids, ind_dir = I("2_model"))
 
   2_fetch_formatted_data_tasks.yml:
-    command: create_task_makefile(makefile=target_name, task_plan = fetch_formatted_data_task_plan, include = "2_model.yml")
+    command: create_task_makefile(makefile=target_name, task_plan = fetch_formatted_data_task_plan, include = I("2_model.yml"))
 
   2_model/log/2_fetch_formatted_data_tasks.ind:
     command: loop_tasks(task_plan = fetch_formatted_data_task_plan, task_makefile = "2_fetch_formatted_data_tasks.yml", num_tries = 2)
 
   model_task_plan:
-    command: create_model_task_plan(site_ids, model_cfg, ind_dir = I("2_model"))
+    command: create_model_task_plan(site_ids, model_cfg)
 
   2_model_tasks.yml:
     command: create_model_task_makefile(task_plan = model_task_plan, makefile = target_name, ind_complete = TRUE)

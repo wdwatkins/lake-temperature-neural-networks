@@ -5,7 +5,7 @@ get_model_func_site_id <- function(task_name) {
   return(list(site_id, model_func))
 }
 
-create_model_task_plan <- function(site_ids, model_function_names, ind_dir) {
+create_model_task_plan <- function(site_ids, model_function_names) {
   model_function_names <- as.character(model_function_names)
   task_steps <- list(
     create_task_step(step_name = "model_output_ind",
@@ -20,7 +20,9 @@ create_model_task_plan <- function(site_ids, model_function_names, ind_dir) {
                      target_name = function(steps, ...) {
                        as_data_file(steps[[1]]$target_name)
                      },
-                     command = "require_local_as_ind(target_name)",
+                     command = function(steps, ...) {
+                       steps[[1]]$target_name
+                     },
                      depends = function(steps, ...) {
                        steps[[1]]$target_name
                      }),
