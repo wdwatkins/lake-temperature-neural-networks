@@ -43,6 +43,15 @@ calc_priority_lakes <- function(temp_dat, n_min, n_years, years_with_7months, ye
 
 }
 
-combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data) {
-  return(unique(c(priority_lakes_by_choice, priority_lakes_by_data)))
+combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data, name_crosswalk) {
+
+  crosswalk <- readRDS(name_crosswalk)
+  all_lakes <- unique(c(priority_lakes_by_choice, priority_lakes_by_data))
+
+  all_lakes_names <- select(crosswalk, site_id, lake_name = GNIS_Nm) %>%
+    filter(site_id %in% all_lakes) %>%
+    distinct() %>%
+    mutate(lake_name = gsub('\\d+$', '', lake_name))
+
+  return(all_lakes_names)
 }
