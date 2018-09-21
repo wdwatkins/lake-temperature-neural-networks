@@ -1,38 +1,50 @@
 target_default: 2_model
 
 packages:
-  - dplyr
   - tidyr
-  - keras
+  - stringr
+  - dplyr
+  - zeallot
 
 sources:
+  - lib/src/utils.R
+  - lib/src/require_local.R
   - 2_model/src/models.R
+  - 2_model/src/model_tasks.R
   - 2_model/src/evaluate.R
+  - 2_model/src/fetch_formatted_data_tasks.R
 
 targets:
   2_model:
     depends:
-      - model_01
-      - model_01_eval
-      - model_02
-      - model_02_eval
-      - model_03
-      - model_03_eval
+      - 2_model/log/2_model_tasks.ind
 
-  lake_name:
-    command: c(I('Mille Lacs'))
+  # read and subset the NN settings
+  settings:
+    command: yaml.load_file('lib/cfg/settings.yml')
+  model_cfg:
+    command: settings[[I('model_functions')]]
 
-  model_01:
-    command: run_model_01(split_scaled_nn)
-  model_01_eval:
-    command: evaluate_model(model_01, split_scaled_nn, rmd_file="2_model/src/assessment.Rmd", lake_name = lake_name)
+  site_ids:
+    command: get_site_ids(file = 'lib/crosswalks/pipeline_3_lakes.csv')
 
-  model_02:
-    command: run_model_02(split_scaled_nn)
-  model_02_eval:
-    command: evaluate_model(model_02, split_scaled_nn, rmd_file="2_model/src/assessment.Rmd", lake_name = lake_name)
+  fetch_formatted_data_task_plan:
+    command: create_fetch_formatted_data_task_plan(site_ids, ind_dir = I("2_model"))
 
-  model_03:
-    command: run_model_03(split_scaled_nn)
-  model_03_eval:
-    command: evaluate_model(model_03, split_scaled_nn, rmd_file="2_model/src/assessment.Rmd", lake_name = lake_name)
+  2_fetch_formatted_data_tasks.yml:
+    command: create_task_makefile(makefile=target_name, task_plan = fetch_formatted_data_task_plan, include = I("2_model.yml"))
+
+  2_model/log/2_fetch_formatted_data_tasks.ind:
+    command: loop_tasks(task_plan = fetch_formatted_data_task_plan, task_makefile = "2_fetch_formatted_data_tasks.yml", num_tries = 2)
+
+  model_task_plan:
+    command: create_model_task_plan(site_ids, model_cfg)
+
+  2_model_tasks.yml:
+    command: create_model_task_makefile(task_plan = model_task_plan, makefile = target_name, ind_complete = TRUE)
+
+  2_model/log/2_model_tasks.ind:
+    command: loop_tasks(task_plan = model_task_plan, task_makefile = '2_model_tasks.yml', num_tries = 1)
+
+
+

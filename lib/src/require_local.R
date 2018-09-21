@@ -23,3 +23,7 @@ require_local <- function(ind_file) {
 
   invisible()
 }
+
+require_local_as_ind <- function(dat_file) {
+  require_local(as_ind_file(dat_file))
+}

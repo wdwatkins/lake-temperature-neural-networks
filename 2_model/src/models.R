@@ -1,4 +1,5 @@
-run_model_01 <- function(dat) {
+run_model_01 <- function(data_ind, out_ind) {
+  dat <- readRDS(as_data_file(data_ind))
 
   # configure
   l2_lambda <- 0.5 #regularization factors, L1 and L2 regularization
@@ -30,11 +31,14 @@ run_model_01 <- function(dat) {
     validation_split = 0.1)
 
   # package and return the results
-  return(list(id=1, description="as in Anuj's paper", serialized=serialize_model(network), history=history))
+  out <- list(id=1, description="as in Anuj's paper", serialized=serialize_model(network), history=history)
+  out_data_file <- as_data_file(out_ind)
+  saveRDS(out, file = out_data_file)
+  sc_indicate(out_ind, data_file = out_data_file)
 }
 
-run_model_02 <- function(dat) {
-
+run_model_02 <- function(data_ind, out_ind) {
+  dat <- readRDS(as_data_file(data_ind))
   # configure
   reg <- regularizer_l2(0.5)
   init <- initializer_random_uniform(0,1)
@@ -76,11 +80,14 @@ run_model_02 <- function(dat) {
         validation_split = 0.1)
 
   # package and return the results
-  return(list(id=2, description="Anuj's paper but L2 reg, Adam optimization, batch_size=1024", serialized=serialize_model(network), history=history))
+  out <- list(id=2, description="Anuj's paper but L2 reg, Adam optimization, batch_size=1024", serialized=serialize_model(network), history=history)
+  out_data_file <- as_data_file(out_ind)
+  saveRDS(out, file = out_data_file)
+  sc_indicate(out_ind, data_file = out_data_file)
 }
 
-run_model_03 <- function(dat) {
-
+run_model_03 <- function(data_ind, out_ind) {
+  dat <- readRDS(as_data_file(data_ind))
   # configure
   reg <- regularizer_l2(0.5)
   init <- initializer_random_uniform(0,1)
@@ -121,5 +128,8 @@ run_model_03 <- function(dat) {
         validation_split = 0.1)
 
   # package and return the results
-  return(list(id=3, description="Anuj's paper but L2 reg, Adam optimization, batch_size=1024, 30% dropout", serialized=serialize_model(network), history=history))
+  out <- list(id=3, description="Anuj's paper but L2 reg, Adam optimization, batch_size=1024, 30% dropout", serialized=serialize_model(network), history=history)
+  out_data_file <- as_data_file(out_ind)
+  saveRDS(out, file = out_data_file)
+  sc_indicate(out_ind, data_file = out_data_file)
 }

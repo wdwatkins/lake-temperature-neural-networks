@@ -1,7 +1,3 @@
-get_site_ids <- function(file, comment = "#") {
-  read_csv(file, comment = comment)$site_id
-}
-
 lookup_meteo_file <- function(site_id) {
   #once the table exists, will lookup there
   sprintf("1_format/in/drivers/%s_meteo.feather.ind", site_id)
