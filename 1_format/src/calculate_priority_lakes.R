@@ -53,5 +53,9 @@ combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data,
     distinct() %>%
     mutate(lake_name = gsub('\\d+$', '', lake_name))
 
+  choice_lakes_dont_quality <- priority_lakes_by_choice0[!priority_lakes_by_choice %in% priority_lakes_by_data]
+  if(length(choice_lakes_dont_quality) > 0) {
+    warning(length(choice_lakes_dont_quality), "chosen lakes don't meet data criteria:", choice_lakes_dont_quality)
+  }
   return(all_lakes_names)
 }
