@@ -1,10 +1,10 @@
 lookup_meteo_file <- function(site_id) {
   #once the table exists, will lookup there
-  sprintf("1_format/in/drivers/%s_meteo.feather.ind", site_id)
+  sprintf("in/driver-data/%s_meteo.feather.ind", site_id)
 }
 
 get_input_file_names <- function(site_id = task_name) {
-  obs_file <- sprintf("1_format/in/obs/%s_obs.csv.ind", site_id)
+  obs_file <- sprintf("1_format/tmp/%s_separated_obs.feather.ind", site_id)
   glm_preds_file <- sprintf('1_format/in/glm_preds/%s_output.nc.ind', site_id)
   meteo_file <- lookup_meteo_file(site_id)
   return(list(obs_file=obs_file, glm_preds_file=glm_preds_file,
@@ -20,7 +20,25 @@ create_format_task_plan <- function(site_ids, ind_dir, settings_yml = "lib/cfg/s
   # files will no longer be appropriate and we should call sc_retrieve within
   # combine_nn_data.
   task_steps <- list(
-    # step1a_combine_ind
+    # step1a_separate_obs_ind
+    create_task_step(
+      step_name = "separate_obs_ind",
+      target_name = function(task_name, ...) {
+        sprintf("1_format/tmp/%s_separated_obs.feather.ind", task_name)
+      },
+      command = function(task_name, ...) {
+        sprintf("separate_obs(out_ind = target_name, site_id = I(\'%s\'))", task_name)
+      }),
+    # step1b_separate_obs_feather
+    create_task_step(
+      step_name = "separate_obs_feather",
+      target_name = function(steps, ...) {
+        as_data_file(steps[['separate_obs_ind']]$target_name)
+      },
+      command = function(steps, ...) {
+        sprintf("require_local(\'%s\')", steps[['separate_obs_ind']]$target_name)
+      }),
+    # step2a_combine_ind
     create_task_step(
       step_name = "combine_ind",
       target_name = function(task_name, ...) {
@@ -36,7 +54,7 @@ create_format_task_plan <- function(site_ids, ind_dir, settings_yml = "lib/cfg/s
           "meteo_ind = I('%s')," = meteo_file,
           "combine_cfg = combine_cfg)")
       }),
-    # step1b_combine_rds
+    # step2b_combine_rds
     create_task_step(
       step_name = "combine_rds",
       target_name = function(steps, ...) {
@@ -46,7 +64,7 @@ create_format_task_plan <- function(site_ids, ind_dir, settings_yml = "lib/cfg/s
         sprintf("require_local('%s')", steps[['combine_ind']]$target_name)
       }),
 
-    # step2a_format_ind
+    # step3a_format_ind
     create_task_step(
       step_name = "format_ind",
       target_name = function(task_name, ...) {
@@ -59,7 +77,7 @@ create_format_task_plan <- function(site_ids, ind_dir, settings_yml = "lib/cfg/s
           "combined_ind = '%s'," = steps[['combine_ind']]$target_name,
           "format_cfg = format_cfg)")
       }),
-    # step2b_format_rds
+    # step3b_format_rds
     create_task_step(
       step_name = "format_rds",
       target_name = function(steps, ...) {
@@ -69,7 +87,7 @@ create_format_task_plan <- function(site_ids, ind_dir, settings_yml = "lib/cfg/s
         sprintf("require_local('%s')", steps[['format_ind']]$target_name)
       }),
 
-    # step3a_split_scale_ind
+    # step4a_split_scale_ind
     create_task_step(
       step_name = "split_scale_ind",
       target_name = function(task_name, ...) {
@@ -103,4 +121,11 @@ create_format_task_makefile <- function(task_plan, makefile, ...) {
     sources = c("lib/src/require_local.R", "1_format/src/combine_nn_inputs.R"),
     include = "1_format.yml",
     ...)
+}
+
+separate_obs <- function(site_id, out_ind, all_obs_file = "in/merged_temp_data_daily.feather") {
+  #assuming data is already fully clean
+  site_obs <- read_feather(all_obs_file) %>% filter(.data$site_id == site_id)
+  write_feather(x = site_obs, path = as_data_file(out_ind))
+  sc_indicate(ind_file = out_ind, data_file = as_data_file(out_ind))
 }
