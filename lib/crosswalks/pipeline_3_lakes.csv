@@ -1,4 +1,12 @@
-# just a placeholder
-site_id,name
-"nhd_2360642", "Mille Lacs"
-"nhd_13293262", "Mendota"
+name,site_id
+Kabetogama,nhd_120052238
+Leech,nhd_4817675
+Leech,nhd_4819397
+Lake of the Woods,nhd_120052195
+Mille Lacs,nhd_2360642
+Rainy,nhd_120052233
+Red,nhd_120052889
+Vermilion,nhd_7142570
+Winnibigoshish,nhd_120052896
+Mendota,nhd_13293262
+Cass,nhd_167122137
