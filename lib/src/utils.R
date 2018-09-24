@@ -9,8 +9,12 @@ psprintf <- function(..., sep='\n      ') {
   paste(strs, collapse=sep)
 }
 
-get_site_ids <- function(file, comment = "#") {
-  read_csv(file, comment = comment)$site_id
+get_site_ids <- function(file, comment = "#", test_2_sites = FALSE) {
+  sites <- read_csv(file, comment = comment)$site_id
+  if(test_2_sites) {
+    sites <- sites %>% filter(name %in% c("Mendota", "Mille Lacs"))
+  }
+  return(sites)
 }
 
 lookup_lake_name <- function(lake_site_id) {

@@ -46,7 +46,9 @@ targets:
     command: combine_priorities(priority_lakes_by_choice, priority_lakes_by_data, name_crosswalk = 'in/feature_crosswalk.rds')
 
   site_ids:
-    command: get_site_ids(file = 'lib/crosswalks/pipeline_3_lakes.csv')
+    command: get_site_ids(file = 'lib/crosswalks/pipeline_3_lakes.csv', test = I(TRUE))
+
+  #once GLM outputs are ready, switch this over to priorty_lakes
 
   format_data_task_plan:
     command: create_format_task_plan(site_ids, ind_dir = I("1_format"))
