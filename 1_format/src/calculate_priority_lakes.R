@@ -57,5 +57,17 @@ combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data,
   if(length(choice_lakes_dont_quality) > 0) {
     warning(length(choice_lakes_dont_quality), "chosen lakes don't meet data criteria:", choice_lakes_dont_quality)
   }
-  return(all_lakes_names)
+
+  reg_sheet <- googlesheets::gs_key('1gCfesykjlTDQvdNlWJDo1GkCTOufRJOZdZx7Kzbp0vM')
+  missing_names <- googlesheets::gs_read(ss = reg_sheet)
+
+  all_lakes_names_fixed <- left_join(priority_lakes, missing_names, by = 'site_id') %>%
+    mutate(lake_name = ifelse(is.na(lake_name.x), lake_name.y, lake_name.x)) %>%
+    select(site_id, lake_name)
+
+  if (any(is.na(all_lakes_names_fixed$lake_name))) {
+    warning(paste0('Some NHD ids are still missing lake names (site_id = ', paste(all_lakes_names_fixed$site_id[is.na(all_lakes_names_fixed$lake_name)], sep = ', '), '). Update the google sheet lake-temperature-neural-networks/in/missing_names_crosswalk.'))
+  }
+
+  return(all_lakes_names_fixed)
 }
