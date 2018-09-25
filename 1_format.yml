@@ -32,9 +32,9 @@ targets:
   in/merged_temp_data_daily.feather:
     command: gd_get(ind_file = 'in/merged_temp_data_daily.feather.ind')
 
-  # get lake metadata (for names) from pipeline #1
-  in/feature_crosswalk.rds:
-    command: gd_get(ind_file = 'in/feature_crosswalk.rds.ind')
+  # get NLDAS-NHD crosswalk from pipeline #2
+  in/feature_nldas_coords.rds:
+    command: gd_get(ind_file = 'in/feature_nldas_coords.rds.ind')
 
   priority_lakes_by_choice:
    command: get_site_ids(file = 'lib/crosswalks/pipeline_3_lakes.csv')
