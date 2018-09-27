@@ -43,7 +43,7 @@ calc_priority_lakes <- function(temp_dat, n_min, n_years, years_with_7months, ye
 
 }
 
-combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data, name_crosswalk) {
+combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data, name_crosswalk, test = FALSE) {
 
   crosswalk <- readRDS(name_crosswalk)
   all_lakes <- unique(c(priority_lakes_by_choice, priority_lakes_by_data))
@@ -53,20 +53,23 @@ combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data,
     distinct() %>%
     mutate(lake_name = gsub('\\d+$', '', lake_name))
 
-  choice_lakes_dont_quality <- priority_lakes_by_choice0[!priority_lakes_by_choice %in% priority_lakes_by_data]
+  choice_lakes_dont_quality <- priority_lakes_by_choice[!priority_lakes_by_choice %in% priority_lakes_by_data]
   if(length(choice_lakes_dont_quality) > 0) {
-    warning(length(choice_lakes_dont_quality), "chosen lakes don't meet data criteria:", choice_lakes_dont_quality)
+    warning(length(choice_lakes_dont_quality), " chosen lakes don't meet data criteria: ", choice_lakes_dont_quality)
   }
 
   reg_sheet <- googlesheets::gs_key('1gCfesykjlTDQvdNlWJDo1GkCTOufRJOZdZx7Kzbp0vM')
   missing_names <- googlesheets::gs_read(ss = reg_sheet)
 
-  all_lakes_names_fixed <- left_join(priority_lakes, missing_names, by = 'site_id') %>%
+  all_lakes_names_fixed <- left_join(all_lakes_names, missing_names, by = 'site_id') %>%
     mutate(lake_name = ifelse(is.na(lake_name.x), lake_name.y, lake_name.x)) %>%
     select(site_id, lake_name)
 
   if (any(is.na(all_lakes_names_fixed$lake_name))) {
     warning(paste0('Some NHD ids are still missing lake names (site_id = ', paste(all_lakes_names_fixed$site_id[is.na(all_lakes_names_fixed$lake_name)], sep = ', '), '). Update the google sheet lake-temperature-neural-networks/in/missing_names_crosswalk.'))
+  }
+  if(test) {
+     all_lakes_names_fixed <- all_lakes_names_fixed %>% filter(site_id %in% c("nhd_2360642"))
   }
 
   return(all_lakes_names_fixed)
