@@ -1,3 +1,5 @@
+glm_yeti_path: '/cxfs/projects/usgs/water/iidd/data-sci/lake-temp/glm_output'
+
 # combine_nn_data
 min_obs_per_depth: 100
 min_obs_per_date: 1
@@ -10,6 +12,4 @@ dev_frac: 0.20
 test_frac: 0.20
 
 # 2_model
-model_functions:
-  - run_model_01
-  - run_model_02
+model_functions: ['run_model_01', 'run_model_02']
