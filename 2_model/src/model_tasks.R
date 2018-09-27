@@ -37,8 +37,8 @@ create_model_task_plan <- function(site_ids, model_function_names) {
                      depends = function(steps, ...) {
                        steps[[2]]$target_name
                      }))
-
-  task_names <- expand.grid(site_ids, model_function_names) %>% arrange(Var1) %>%
+  browser()
+  task_names <- expand.grid(site_ids$site_id, model_function_names) %>% arrange(Var1) %>%
     unite(col = "task_names", Var1, Var2, sep = "_") %>% .$task_names
 
   model_task_plan <- create_task_plan(
@@ -57,6 +57,6 @@ create_model_task_makefile <- function(task_plan, makefile, ...) {
     makefile = makefile,
     packages = c("dplyr", "tidyr", "keras", "scipiper"),
     source = c("lib/src/require_local.R", "2_model/src/models.R", "lib/src/utils.R", "lib/src/require_local.R"),
-    include = "2_model.yml",
+    include = "remake.yml",
     ...)
 }

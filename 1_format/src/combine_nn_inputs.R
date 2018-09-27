@@ -30,7 +30,7 @@
 #' @param combined_ind name of indicator file where output should be
 #'   saved/indicated
 #' @param obs_ind indicator file of observations, with at least columns
-#'   `DateTime`, `Depth`, and `temp`
+#'   `DateTime`, `depth`, and `temp`
 #' @param glm_preds_ind indicator file of temperature predictions from GLM
 #' @param meteo_ind indicator file of meteorological data
 #' @param combine_cfg list containing configuration information, with 2 elements
@@ -42,101 +42,98 @@
 #' @param common_depths as an alternative to `combine_cfg$min_obs_per_depth`, a vector of
 #'   common depths (in m) can be specified directly. If `common_depths` is given
 #'   then `combine_cfg$min_obs_per_depth` will be ignored
-combine_nn_data <- function(
-  combined_ind='1_format/tmp/inputs.rds.ind',
-  obs_ind='1_format/tmp/mendota_obs.csv.ind',
-  glm_preds_ind='1_format/in/output.nc.ind',
-  meteo_ind='1_format/in/Mendota_meteo.feather.ind',
+combine_nn_data <- function(combined_ind, obs_ind, glm_preds_ind, meteo_file,
   combine_cfg = list(min_obs_per_depth=100, min_obs_per_date=1),
   common_depths) {
 
   # convert ind files to data files
   glm_preds_file <- scipiper::as_data_file(glm_preds_ind)
-  meteo_file <- scipiper::as_data_file(meteo_ind)
   obs_file <- scipiper::as_data_file(obs_ind)
 
   # read and format the temperature observations
-  obs <- dplyr::as_data_frame(data.table::fread(obs_file)) %>%
-    filter(!is.na(Depth)) %>%
-    mutate(Date = as.Date(DateTime)) %>%
-    select(Date, Depth, ObsTemp=temp)
+  obs <- readRDS(obs_file) %>% select(date = DateTime, depth, ObsTemp=temp)
 
   # determine which depths are sufficiently commonly observed to deserve their
   # own NN node in spatially explicit networks
   if(missing(common_depths)) {
     common_depths <- obs %>%
-      group_by(Depth) %>%
+      group_by(depth) %>%
       summarize(NumObs = length(ObsTemp)) %>%
       filter(NumObs >= combine_cfg$min_obs_per_depth) %>%
-      pull(Depth)
+      pull(depth)
   }
   # identify the "common dates", those dates that include at least N
   # observations at the common depths
   common_dates <- obs %>%
-    filter(Depth %in% common_depths) %>%
-    group_by(Date) %>%
+    filter(depth %in% common_depths) %>%
+    group_by(date) %>%
     summarize(NumObs = length(ObsTemp)) %>%
     filter(NumObs >= combine_cfg$min_obs_per_date) %>%
-    pull(Date)
-  obs_dates <- unique(obs$Date)
+    pull(date)
+  obs_dates <- unique(obs$date)
 
   # amend the temperature observations with info about their match to the grid
   obs <- obs %>%
     mutate(
-      IsGridDepth = Depth %in% common_depths,
-      IsGridDate = Date %in% common_dates)
+      IsGriddepth = depth %in% common_depths,
+      IsGridDate = date %in% common_dates)
 
   # read in the glm predictions so they can be matched to (1) the depths and
   # dates of the temperature observations, for NNs, (2) a temporally subset grid
   # of depths and days where only those days with observations at grid depths
   # are included, for SNNs, (3) a complete grid of depths and days, for RNNs and
   # RSNNs. the actual matching happens in format_nn_data()
+
+  print(glm_preds_file)
   glm_preds_by_obs <- glmtools::resample_to_field(nc_file = glm_preds_file, field_file = obs_file) %>%
-    mutate(Date = as.Date(DateTime)) %>%
+    mutate(date = as.Date(DateTime)) %>%
     mutate(IsObsMatch = TRUE) %>%
-    select(Date, Depth, GLMTemp=Modeled_temp, IsObsMatch) %>%
+    select(date, depth = Depth, GLMTemp=Modeled_temp, IsObsMatch) %>%
     as_data_frame() %>%
     filter(!is.na(GLMTemp))
+  message("glm_preds: ", glm_preds_file)
+  message("z_out: ", common_depths)
   glm_preds_by_dep <- glmtools::get_temp(glm_preds_file, reference = "surface", z_out = common_depths) %>%
     tidyr::gather(var_depth, GLMTemp, -DateTime) %>%
-    tidyr::separate(var_depth, c('Var','Depth'), sep="_") %>%
-    mutate(Depth = as.numeric(Depth), Date = as.Date(DateTime)) %>%
-    mutate(IsGridDepth = TRUE) %>%
-    select(Date, Depth, GLMTemp, IsGridDepth) %>%
+    tidyr::separate(var_depth, c('Var','depth'), sep="_") %>%
+    mutate(depth = as.numeric(depth), date = as.Date(DateTime)) %>%
+    mutate(IsGriddepth = TRUE) %>%
+    select(date, depth, GLMTemp, IsGriddepth) %>%
     as_data_frame() %>%
     filter(!is.na(GLMTemp))
-  glm_preds <- full_join(glm_preds_by_obs, glm_preds_by_dep, by=c('Date','Depth','GLMTemp')) %>%
+  glm_preds <- full_join(glm_preds_by_obs, glm_preds_by_dep, by=c('date','depth','GLMTemp')) %>%
     mutate(
       IsObsMatch = ifelse(is.na(IsObsMatch), FALSE, IsObsMatch),
-      IsGridDepth = ifelse(is.na(IsGridDepth), FALSE, IsGridDepth),
-      IsGridObsDate = Date %in% common_dates,
-      IsAnyObsDate = Date %in% obs_dates) %>%
-    arrange(Date, Depth)
+      IsGriddepth = ifelse(is.na(IsGriddepth), FALSE, IsGriddepth),
+      IsGridObsDate = date %in% common_dates,
+      IsAnyObsDate = date %in% obs_dates) %>%
+    arrange(date, depth)
 
   # read and format the meteorological (drivers) data so they can be subset to
   # (1) drivers matched to the dates of the temperature observations, for NNs
   # and SNNs, or (2) a complete timeseries of drivers for all days, for RNNs and
   # RSNNs
-  meteo <- feather::read_feather(meteo_file) %>%
-    mutate(Date = as.Date(time)) %>%
+  print(meteo_file)
+  meteo <- read_csv(meteo_file) %>%
+    mutate(date = as.Date(time)) %>%
     select(-time) %>%
-    select(Date, everything()) %>%
+    select(date, everything()) %>%
     augment_met_features() %>%
-    filter(Date %in% unique(glm_preds$Date)) %>%
+    filter(date %in% unique(glm_preds$date)) %>%
     select(-Snow) %>% # replaced by the logical SnowTF
     mutate(
-      IsGridObsDate = Date %in% common_dates,
-      IsAnyObsDate = Date %in% obs_dates) %>%
-    arrange(Date) %>%
-    remove_rain_offset()
+      IsGridObsDate = date %in% common_dates,
+      IsAnyObsDate = date %in% obs_dates) %>%
+    arrange(date)# %>%
+   # remove_rain_offset()
 
   # amend the observations one more time to truncate to match glm and meteo data
-  obs_in_glm <- inner_join(glm_preds_by_obs, obs, by=c('Date','Depth')) %>%
-    select(Date, Depth, ObsTemp)
-  obs_in_met <- filter(obs, Date %in% meteo$Date) %>%
-    select(Date, Depth, ObsTemp)
-  obs <- inner_join(obs_in_glm, obs_in_met, by=c('Date','Depth','ObsTemp')) %>%
-    left_join(obs, by=c('Date','Depth','ObsTemp'))
+  obs_in_glm <- inner_join(glm_preds_by_obs, obs, by=c('date','depth')) %>%
+    select(date, depth, ObsTemp)
+  obs_in_met <- filter(obs, date %in% meteo$date) %>%
+    select(date, depth, ObsTemp)
+  obs <- inner_join(obs_in_glm, obs_in_met, by=c('date','depth','ObsTemp')) %>%
+    left_join(obs, by=c('date','depth','ObsTemp'))
 
   # package everything into a list
   inputs <- list(
@@ -154,10 +151,10 @@ combine_nn_data <- function(
 augment_met_features <- function(meteo) {
   meteo %>%
     mutate(
-      YDay = lubridate::yday(Date),
+      YDay = lubridate::yday(date),
       SnowTF = ifelse(Snow > 0, yes = 1, no = 0),
       FreezeTF = ifelse(AirTemp <= 0, yes = 1, no = 0),
-      Year = lubridate::year(Date)) %>%
+      Year = lubridate::year(date)) %>%
     group_by(Year) %>%
     mutate(
       GDD = cumsum(pmax(AirTemp - 10, 0))) %>%
@@ -248,20 +245,20 @@ format_nn_data <- function(formatted_ind, combined_ind, format_cfg) {
   glm_preds <- inputs$glm_preds
   if(structure == 'NN') {
     glm_in <- filter(glm_preds, IsObsMatch) %>%
-      select(Date, Depth, GLMTemp)
+      select(date, depth, GLMTemp)
   } else if(structure == 'SNN') {
-    glm_in <- filter(glm_preds, IsGridDepth & IsGridObsDate) # IsAnyObsDate
+    glm_in <- filter(glm_preds, IsGriddepth & IsGridObsDate) # IsAnyObsDate
   } else if(structure %in% c('RNN','RSNN')) {
-    glm_in <- filter(glm_preds, IsGridDepth) # | IsObsMatch
+    glm_in <- filter(glm_preds, IsGriddepth) # | IsObsMatch
   }
   if(structure %in% c('SNN','RNN','RSNN')) {
     glm_in <- glm_in %>%
-      mutate(DepthColname = sprintf('GLMTemp_%04.1fm', Depth)) %>%
-      select(Date, DepthColname, GLMTemp) %>%
-      tidyr::spread(DepthColname, GLMTemp)
+      mutate(depthColname = sprintf('GLMTemp_%04.1fm', depth)) %>%
+      select(date, depthColname, GLMTemp) %>%
+      tidyr::spread(depthColname, GLMTemp)
     if(structure == 'RNN') {
       glm_dep <- filter(glm_preds, IsObsMatch)
-      glm_in <- full_join(glm_dep, glm_in, by='Date')
+      glm_in <- full_join(glm_dep, glm_in, by='date')
     }
   }
 
@@ -273,26 +270,26 @@ format_nn_data <- function(formatted_ind, combined_ind, format_cfg) {
     'RNN' =, 'RSNN' = meteo) %>%
     select(-IsAnyObsDate, -IsGridObsDate)
 
-  all_in <- full_join(met_in, glm_in, by='Date')
-  mat_in <- as.matrix(select(all_in, -Date))
-  rownames(mat_in) <- format(all_in$Date, '%Y%m%d')
+  all_in <- full_join(met_in, glm_in, by='date')
+  mat_in <- as.matrix(select(all_in, -date))
+  rownames(mat_in) <- format(all_in$date, '%Y%m%d')
 
   obs <- inputs$obs
   obs_out <- switch(
     structure,
     'NN' = obs,
-    'SNN' =, 'RNN' =, 'RSNN' = filter(obs, IsGridDepth)) %>%
-    select(Date, Depth, ObsTemp)
+    'SNN' =, 'RNN' =, 'RSNN' = filter(obs, IsGriddepth)) %>%
+    select(date, depth, ObsTemp)
   if(structure %in% c('NN','RNN')) {
-    all_out_names <- sprintf("%s_%04.1fm", format(obs_out$Date, '%Y%m%d'), obs_out$Depth)
+    all_out_names <- sprintf("%s_%04.1fm", format(obs_out$date, '%Y%m%d'), obs_out$depth)
     all_out <- select(obs_out, ObsTemp)
   } else if(structure %in% c('SNN','RSNN')) {
     all_out <- obs_out %>%
-      mutate(DepthColname = sprintf('ObsTemp_%04.1fm', Depth)) %>%
-      select(Date, DepthColname, ObsTemp) %>%
-      tidyr::spread(DepthColname, ObsTemp)
-    all_out_names <- format(all_out$Date, '%Y%m%d')
-    all_out <- select(all_out, -Date)
+      mutate(depthColname = sprintf('ObsTemp_%04.1fm', depth)) %>%
+      select(date, depthColname, ObsTemp) %>%
+      tidyr::spread(depthColname, ObsTemp)
+    all_out_names <- format(all_out$date, '%Y%m%d')
+    all_out <- select(all_out, -date)
   }
   mat_out <- as.matrix(all_out)
   rownames(mat_out) <- all_out_names
