@@ -15,10 +15,4 @@ create_fetch_formatted_data_task_plan <- function(site_ids, ind_dir) {
   return(fetch_formatted_data_task_plan)
 }
 
-create_model_task_makefile <- function(task_plan, makefile, ...) {
-  create_task_makefile(
-    task_plan = task_plan,
-    makefile = makefile,
-    include = "2_model.yml",
-    ...)
-}
+
