@@ -5,14 +5,15 @@ packages:
 
 include:
   - 1_format.yml
+  - 2_model.yml
 
-#assuming that certain files from previous pipelines have been manually pulled down:
-# -- List of sites from pipeline 1
-# -- GLM output for list of sites
-# -- Driver data for cell-specific files (need crosswalk to NHDs)
-# -- big temp obs table
-
+#assuming that certain files from previous pipelines have been manually pulled down,.
+# or their respective indicator files have been updated from pipelines 1 and 2:
+# -- Driver data for cell-specific files (manual from Yeti)
+# -- merged temp observations file from pipeline 1
+# -- master NHD lake list with names and corresponding NLDAS tiles from pipeline 2
 targets:
   all:
     depends:
       - 1_format
+      - 2_model

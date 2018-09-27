@@ -7,6 +7,7 @@ packages:
   - googledrive
   - scipiper
   - dplyr
+  - feather
 
 sources:
   - lib/src/utils.R
@@ -27,6 +28,9 @@ targets:
     command: settings[I(c('structure'))]
   split_scale_cfg:
     command: settings[I(c('dev_frac', 'test_frac'))]
+  glm_yeti_path_cfg:
+    command: settings[I(c('glm_yeti_path'))]
+
 
   # get temperature observations from pipeline #1
   in/merged_temp_data_daily.feather:
@@ -43,15 +47,10 @@ targets:
     command: calc_priority_lakes(temp_dat = 'in/merged_temp_data_daily.feather', n_min = 2000, n_years = 30, years_with_7months = 10, years_with_10days = 20, n_days = 1000)
 
   priority_lakes:
-    command: combine_priorities(priority_lakes_by_choice, priority_lakes_by_data, name_crosswalk = 'in/feature_crosswalk.rds')
-
-  site_ids:
-    command: get_site_ids(file = 'lib/crosswalks/pipeline_3_lakes.csv', test = I(TRUE))
-
-  #once GLM outputs are ready, switch this over to priorty_lakes
+    command: combine_priorities(priority_lakes_by_choice, priority_lakes_by_data, name_crosswalk = 'in/feature_nldas_coords.rds', test = I(TRUE))
 
   format_data_task_plan:
-    command: create_format_task_plan(site_ids, ind_dir = I("1_format"))
+    command: create_format_task_plan(priority_lakes, ind_dir = I("1_format"))
 
   1_format_tasks.yml:
     command: create_format_task_makefile(task_plan = format_data_task_plan, makefile = target_name, ind_complete=TRUE)
