@@ -1,4 +1,4 @@
-target_default: all
+target_default: all_pipeline_3
 
 packages:
   - readr
@@ -13,7 +13,7 @@ include:
 # -- merged temp observations file from pipeline 1
 # -- master NHD lake list with names and corresponding NLDAS tiles from pipeline 2
 targets:
-  all:
+  all_pipeline_3:
     depends:
       - 1_format
       - 2_model

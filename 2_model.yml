@@ -5,6 +5,7 @@ packages:
   - stringr
   - dplyr
   - zeallot
+  - scipiper
 
 sources:
   - lib/src/utils.R
