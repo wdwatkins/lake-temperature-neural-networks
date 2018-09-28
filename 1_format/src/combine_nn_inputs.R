@@ -91,8 +91,6 @@ combine_nn_data <- function(combined_ind, obs_ind, glm_preds_ind, meteo_file,
     select(date, depth = Depth, GLMTemp=Modeled_temp, IsObsMatch) %>%
     as_data_frame() %>%
     filter(!is.na(GLMTemp))
-  message("glm_preds: ", glm_preds_file)
-  message("z_out: ", common_depths)
   glm_preds_by_dep <- glmtools::get_temp(glm_preds_file, reference = "surface", z_out = common_depths) %>%
     tidyr::gather(var_depth, GLMTemp, -DateTime) %>%
     tidyr::separate(var_depth, c('Var','depth'), sep="_") %>%
