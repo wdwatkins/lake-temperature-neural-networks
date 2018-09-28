@@ -11,3 +11,4 @@ build/status/MV9mb3JtYXQvdG1wL25oZF*
 .httr-oauth
 *tasks.yml
 *.feather
+in/driver-data/*.csv
