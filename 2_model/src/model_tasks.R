@@ -37,7 +37,6 @@ create_model_task_plan <- function(site_ids, model_function_names) {
                      depends = function(steps, ...) {
                        steps[[2]]$target_name
                      }))
-  browser()
   task_names <- expand.grid(site_ids$site_id, model_function_names) %>% arrange(Var1) %>%
     unite(col = "task_names", Var1, Var2, sep = "_") %>% .$task_names
 
