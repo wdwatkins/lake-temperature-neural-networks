@@ -76,17 +76,18 @@ preds <- bind_rows(
     example = names(dat$train_target),
     glm = dat$train_input[, 'GLMTemp'] * dat$scales[['GLMTemp']] + dat$centers[['GLMTemp']],
     nn = model_list$network %>% predict(dat$train_input) %>% c(),
-    obs = dat$train_target),
+    obs = dat$train_target, 
+    depth = dat$train_input[,'depth'] * dat$scales[['depth']] + dat$centers[['depth']]),
   data_frame(
     split = 'devel',
     example = names(dat$dev_target),
     glm = dat$dev_input[, 'GLMTemp'] * dat$scales[['GLMTemp']] + dat$centers[['GLMTemp']],
     nn = model_list$network %>% predict(dat$dev_input) %>% c(),
-    obs = dat$dev_target)
+    obs = dat$dev_target, 
+    depth = dat$dev_input[,'depth'] * dat$scales[['depth']] + dat$centers[['depth']])
 ) %>%
   mutate( # the following makes assumptions that only work for NN (not RNN or SNN) models
-    date=as.Date(substring(example, 1, 8), format='%Y%m%d'),
-    depth=as.numeric(gsub('[[:digit:]]{8}_', '', gsub('m', '', example)))
+    date=as.Date(substring(example, 1, 8), format='%Y%m%d')
   ) %>% 
   gather(model, pred, glm, nn, obs)
 ```
