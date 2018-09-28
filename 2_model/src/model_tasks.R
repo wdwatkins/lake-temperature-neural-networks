@@ -31,7 +31,7 @@ create_model_task_plan <- function(site_ids, model_function_names) {
                        c(site_id, model_func) %<-% get_model_func_site_id(task_name)
                        model_output <- steps[[1]]$target_name
                        formatted_data <- sprintf("1_format/out/%s_split_scaled.rds.ind", site_id)
-                       sprintf("evaluate_model(output_html = target_name, model_list_ind = \'%s\', dat_ind = \'%s\', rmd_file='2_model/src/assessment.Rmd', site_id = I(\'%s\'))",
+                       sprintf("evaluate_model(output_html = target_name, model_list_ind = \'%s\', dat_ind = \'%s\', rmd_file='2_model/src/assessment.Rmd', site_id = I(\'%s\'), priority_lakes = priority_lakes)",
                                model_output, formatted_data, site_id)
                        },
                      depends = function(steps, ...) {

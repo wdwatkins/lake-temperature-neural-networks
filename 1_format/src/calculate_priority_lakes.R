@@ -71,6 +71,5 @@ combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data,
   if(test) {
      all_lakes_names_fixed <- all_lakes_names_fixed %>% filter(site_id %in% c("nhd_2360642", "nhd_13293262"))
   }
-
   return(all_lakes_names_fixed)
 }

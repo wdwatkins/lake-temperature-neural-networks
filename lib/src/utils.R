@@ -14,9 +14,9 @@ get_site_ids <- function(file, comment = "#") {
   return(sites$site_id)
 }
 
-lookup_lake_name <- function(lake_site_id) {
-  lake_name_row <- readRDS("in/feature_nldas_coords.rds") %>% filter(site_id == lake_site_id)
-  lake_name <- unique(as.character(lake_name_row$GNIS_Nm))
+lookup_lake_name <- function(lake_site_id, priority_lakes) {
+  lake_name_row <- priority_lakes %>% filter(site_id == lake_site_id)
+  lake_name <- unique(as.character(lake_name_row$lake_name))
   if(length(lake_name) == 0) {
     lake_name <- NA_character_
   }
