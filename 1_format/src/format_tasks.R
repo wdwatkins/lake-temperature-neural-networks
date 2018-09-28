@@ -39,7 +39,7 @@ create_format_task_plan <- function(priority_lakes, ind_dir, settings_yml = "lib
         sprintf("1_format/tmp/%s_separated_obs.rds.ind", task_name)
       },
       command = function(task_name, ...) {
-        sprintf("separate_obs(out_ind = target_name, site_id = I(\'%s\'))", task_name)
+        sprintf("separate_obs(out_ind = target_name, site_id = I(\'%s\'), all_obs_file_ind = 'in/merged_temp_data_daily.feather.ind')", task_name)
       }),
     # step1b_separate_obs_feather
     create_task_step(
@@ -135,7 +135,7 @@ create_format_task_makefile <- function(task_plan, makefile, ...) {
     ...)
 }
 
-separate_obs <- function(site_id, out_ind, all_obs_file_ind = "in/merged_temp_data_daily.feather.ind") {
+separate_obs <- function(site_id, out_ind, all_obs_file_ind) {
   #assuming data is already fully clean
   site_obs <- read_feather(as_data_file(all_obs_file_ind)) %>% filter(nhd_id == site_id) %>%
     rename(DateTime = date) %>% as.data.frame() #need these col names for glmtools::resample_to_field
