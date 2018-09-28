@@ -21,10 +21,8 @@ targets:
       - 2_model/log/2_model_tasks.ind
 
   # read and subset the NN settings
-  settings_model:
-    command: yaml.load_file('lib/cfg/settings.yml')
   model_cfg:
-    command: settings_model[[I('model_functions')]]
+    command: settings[[I('model_functions')]]
 
   #site_ids:
  #   command: get_site_ids(file = 'lib/crosswalks/pipeline_3_lakes.csv')
