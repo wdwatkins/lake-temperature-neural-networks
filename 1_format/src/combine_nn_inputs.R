@@ -110,7 +110,6 @@ combine_nn_data <- function(combined_ind, obs_ind, glm_preds_ind, meteo_file,
   # (1) drivers matched to the dates of the temperature observations, for NNs
   # and SNNs, or (2) a complete timeseries of drivers for all days, for RNNs and
   # RSNNs
-  print(meteo_file)
   meteo <- read_csv(meteo_file) %>%
     mutate(date = as.Date(time)) %>%
     select(-time) %>%
