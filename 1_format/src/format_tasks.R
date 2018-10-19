@@ -129,7 +129,7 @@ create_format_task_makefile <- function(task_plan, makefile, ...) {
   create_task_makefile(
     task_plan = task_plan,
     makefile = makefile,
-    packages = c("dplyr", "tidyr"),
+    packages = c("dplyr", "tidyr", "syncr"),
     sources = c("lib/src/require_local.R", "1_format/src/combine_nn_inputs.R"),
     include = "1_format.yml",
     ...)
