@@ -75,7 +75,7 @@ combine_nn_data <- function(combined_ind, obs_ind, glm_preds_ind, meteo_file,
   # amend the temperature observations with info about their match to the grid
   obs <- obs %>%
     mutate(
-      IsGriddepth = depth %in% common_depths,
+      IsGridDepth = depth %in% common_depths,
       IsGridDate = date %in% common_dates)
 
   # read in the glm predictions so they can be matched to (1) the depths and
@@ -94,14 +94,14 @@ combine_nn_data <- function(combined_ind, obs_ind, glm_preds_ind, meteo_file,
     tidyr::gather(var_depth, GLMTemp, -DateTime) %>%
     tidyr::separate(var_depth, c('Var','depth'), sep="_") %>%
     mutate(depth = as.numeric(depth), date = as.Date(DateTime)) %>%
-    mutate(IsGriddepth = TRUE) %>%
-    select(date, depth, GLMTemp, IsGriddepth) %>%
+    mutate(IsGridDepth = TRUE) %>%
+    select(date, depth, GLMTemp, IsGridDepth) %>%
     as_data_frame() %>%
     filter(!is.na(GLMTemp))
   glm_preds <- full_join(glm_preds_by_obs, glm_preds_by_dep, by=c('date','depth','GLMTemp')) %>%
     mutate(
       IsObsMatch = ifelse(is.na(IsObsMatch), FALSE, IsObsMatch),
-      IsGriddepth = ifelse(is.na(IsGriddepth), FALSE, IsGriddepth),
+      IsGridDepth = ifelse(is.na(IsGridDepth), FALSE, IsGridDepth),
       IsGridObsDate = date %in% common_dates,
       IsAnyObsDate = date %in% obs_dates) %>%
     arrange(date, depth)
@@ -243,15 +243,15 @@ format_nn_data <- function(formatted_ind, combined_ind, format_cfg) {
     glm_in <- filter(glm_preds, IsObsMatch) %>%
       select(date, depth, GLMTemp)
   } else if(structure == 'SNN') {
-    glm_in <- filter(glm_preds, IsGriddepth & IsGridObsDate) # IsAnyObsDate
+    glm_in <- filter(glm_preds, IsGridDepth & IsGridObsDate) # IsAnyObsDate
   } else if(structure %in% c('RNN','RSNN')) {
-    glm_in <- filter(glm_preds, IsGriddepth) # | IsObsMatch
+    glm_in <- filter(glm_preds, IsGridDepth) # | IsObsMatch
   }
   if(structure %in% c('SNN','RNN','RSNN')) {
     glm_in <- glm_in %>%
-      mutate(depthColname = sprintf('GLMTemp_%04.1fm', depth)) %>%
-      select(date, depthColname, GLMTemp) %>%
-      tidyr::spread(depthColname, GLMTemp)
+      mutate(DepthColname = sprintf('GLMTemp_%04.1fm', depth)) %>%
+      select(date, DepthColname, GLMTemp) %>%
+      tidyr::spread(DepthColName, GLMTemp)
     if(structure == 'RNN') {
       glm_dep <- filter(glm_preds, IsObsMatch)
       glm_in <- full_join(glm_dep, glm_in, by='date')
@@ -274,16 +274,16 @@ format_nn_data <- function(formatted_ind, combined_ind, format_cfg) {
   obs_out <- switch(
     structure,
     'NN' = obs,
-    'SNN' =, 'RNN' =, 'RSNN' = filter(obs, IsGriddepth)) %>%
+    'SNN' =, 'RNN' =, 'RSNN' = filter(obs, IsGridDepth)) %>%
     select(date, depth, ObsTemp)
   if(structure %in% c('NN','RNN')) {
     all_out_names <- sprintf("%s_%04.1fm", format(obs_out$date, '%Y%m%d'), obs_out$depth)
     all_out <- select(obs_out, ObsTemp)
   } else if(structure %in% c('SNN','RSNN')) {
     all_out <- obs_out %>%
-      mutate(depthColname = sprintf('ObsTemp_%04.1fm', depth)) %>%
-      select(date, depthColname, ObsTemp) %>%
-      tidyr::spread(depthColname, ObsTemp)
+      mutate(DepthColname = sprintf('ObsTemp_%04.1fm', depth)) %>%
+      select(date, DepthColname, ObsTemp) %>%
+      tidyr::spread(DepthColname, ObsTemp)
     all_out_names <- format(all_out$date, '%Y%m%d')
     all_out <- select(all_out, -date)
   }
