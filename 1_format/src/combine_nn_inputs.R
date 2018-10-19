@@ -84,7 +84,6 @@ combine_nn_data <- function(combined_ind, obs_ind, glm_preds_ind, meteo_file,
   # are included, for SNNs, (3) a complete grid of depths and days, for RNNs and
   # RSNNs. the actual matching happens in format_nn_data()
 
-  print(glm_preds_file)
   glm_preds_by_obs <- glmtools::resample_to_field(nc_file = glm_preds_file, field_file = obs_file) %>%
     mutate(date = as.Date(DateTime)) %>%
     mutate(IsObsMatch = TRUE) %>%
