@@ -17,7 +17,7 @@ create_format_task_plan <- function(priority_lakes, ind_dir, settings_yml = "lib
         sprintf("require_local('%s')", steps[['yeti_download_ind']]$target_name)
       }
     ),
-    # step1a_separate_obs_ind
+
     create_task_step(
       step_name = "separate_obs_ind",
       target_name = function(task_name, ...) {
@@ -26,7 +26,7 @@ create_format_task_plan <- function(priority_lakes, ind_dir, settings_yml = "lib
       command = function(task_name, ...) {
         sprintf("separate_obs(out_ind = target_name, site_id = I(\'%s\'), all_obs_file_ind = 'in/merged_temp_data_daily.feather.ind')", task_name)
       }),
-    # step1b_separate_obs_feather
+
     create_task_step(
       step_name = "separate_obs_feather",
       target_name = function(steps, ...) {
@@ -35,7 +35,7 @@ create_format_task_plan <- function(priority_lakes, ind_dir, settings_yml = "lib
       command = function(steps, ...) {
         sprintf("require_local(\'%s\')", steps[['separate_obs_ind']]$target_name)
       }),
-    # step2a_combine_ind
+
     create_task_step(
       step_name = "combine_ind",
       target_name = function(task_name, ...) {
@@ -53,7 +53,7 @@ create_format_task_plan <- function(priority_lakes, ind_dir, settings_yml = "lib
           "meteo = '%s'," = meteo_file,
           "combine_cfg = combine_cfg)")
       }),
-    # step2b_combine_rds
+
     create_task_step(
       step_name = "combine_rds",
       target_name = function(steps, ...) {
@@ -63,7 +63,6 @@ create_format_task_plan <- function(priority_lakes, ind_dir, settings_yml = "lib
         sprintf("require_local('%s')", steps[['combine_ind']]$target_name)
       }),
 
-    # step3a_format_ind
     create_task_step(
       step_name = "format_ind",
       target_name = function(task_name, ...) {
@@ -76,7 +75,7 @@ create_format_task_plan <- function(priority_lakes, ind_dir, settings_yml = "lib
           "combined_ind = '%s'," = steps[['combine_ind']]$target_name,
           "format_cfg = format_cfg)")
       }),
-    # step3b_format_rds
+
     create_task_step(
       step_name = "format_rds",
       target_name = function(steps, ...) {
@@ -86,7 +85,6 @@ create_format_task_plan <- function(priority_lakes, ind_dir, settings_yml = "lib
         sprintf("require_local('%s')", steps[['format_ind']]$target_name)
       }),
 
-    # step4a_split_scale_ind
     create_task_step(
       step_name = "split_scale_ind",
       target_name = function(task_name, ...) {
