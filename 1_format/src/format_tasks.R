@@ -1,18 +1,3 @@
-lookup_meteo_file <- function(site_id) {
-  #how should the dependency on the lookup table be handled here?
-  table <- readRDS("in/feature_nldas_coords.rds")
-  lake_row <- filter(table, !!site_id == site_id)
-  sprintf("in/driver-data/NLDAS_time[0.346848]_x[%s]_y[%s].csv", lake_row$nldas_coord_x, lake_row$nldas_coord_y)
-}
-
-get_input_file_names <- function(site_id = task_name) {
-  obs_file <- sprintf("1_format/tmp/%s_separated_obs.rds.ind", site_id)
-  glm_preds_file <- sprintf('1_format/in/glm_preds/%s_output.nc.ind', site_id)
-  meteo_file <- lookup_meteo_file(site_id)
-  return(list(obs_file=obs_file, glm_preds_file=glm_preds_file,
-              meteo_file = meteo_file))
-}
-
 #assume task_name == site_id
 create_format_task_plan <- function(priority_lakes, ind_dir, settings_yml = "lib/cfg/settings.yml") {
   task_steps <- list(
@@ -57,11 +42,13 @@ create_format_task_plan <- function(priority_lakes, ind_dir, settings_yml = "lib
         sprintf("1_format/tmp/%s_combined.rds.ind", task_name)
       },
       command = function(task_name, ...){
-        c(obs_file, glm_preds_file, meteo_file) %<-% get_input_file_names(task_name)
+        c(obs_file, glm_preds_file, meteo_file) %<-%
+          ( priority_lakes %>% filter(site_id == task_name) %>%
+              select(obs_file, glm_preds_file, meteo_file))
         psprintf(
           "combine_nn_data(",
           "combined_ind = target_name,",
-          "obs_ind = '%s'," = obs_file, # we should take away the I() if we ever actually have these .ind files
+          "obs_ind = '%s'," = obs_file,
           "glm_preds_ind = '%s'," = glm_preds_file,
           "meteo = '%s'," = meteo_file,
           "combine_cfg = combine_cfg)")

@@ -43,15 +43,21 @@ calc_priority_lakes <- function(temp_dat, n_min, n_years, years_with_7months, ye
 
 }
 
-combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data, name_crosswalk, truncate_lakes_for_dev = FALSE) {
+combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data, nldas_crosswalk_file,
+                               truncate_lakes_for_dev = FALSE) {
 
-  crosswalk <- readRDS(name_crosswalk)
+  crosswalk <- readRDS(nldas_crosswalk_file)
   all_lakes <- unique(c(priority_lakes_by_choice, priority_lakes_by_data))
 
-  all_lakes_names <- select(crosswalk, site_id, lake_name = GNIS_Nm) %>%
+  all_lakes_names <-  crosswalk %>%
     filter(site_id %in% all_lakes) %>%
-    distinct() %>%
-    mutate(lake_name = gsub('\\d+$', '', lake_name))
+    mutate(obs_file = sprintf("1_format/tmp/%s_separated_obs.rds.ind", site_id),
+           glm_preds_file = sprintf('1_format/in/glm_preds/%s_output.nc.ind', site_id),
+           meteo_file = sprintf("in/driver-data/NLDAS_time[0.346848]_x[%s]_y[%s].csv", nldas_coord_x, nldas_coord_y),
+           lake_name = gsub('\\d+$', '', GNIS_Nm)) %>%
+    #other columns from NLDAS file or master lake list could be saved here if useful
+    select(site_id, lake_name, obs_file, glm_preds_file, meteo_file) %>%
+    distinct()
 
   choice_lakes_dont_quality <- priority_lakes_by_choice[!priority_lakes_by_choice %in% priority_lakes_by_data]
   if(length(choice_lakes_dont_quality) > 0) {
@@ -63,7 +69,7 @@ combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data,
 
   all_lakes_names_fixed <- left_join(all_lakes_names, missing_names, by = 'site_id') %>%
     mutate(lake_name = ifelse(is.na(lake_name.x), lake_name.y, lake_name.x)) %>%
-    select(site_id, lake_name)
+    select(site_id, lake_name, obs_file, glm_preds_file, meteo_file)
 
   if (any(is.na(all_lakes_names_fixed$lake_name))) {
     warning(paste0('Some NHD ids are still missing lake names (site_id = ', paste(all_lakes_names_fixed$site_id[is.na(all_lakes_names_fixed$lake_name)], sep = ', '), '). Update the google sheet lake-temperature-neural-networks/in/missing_names_crosswalk.'))
@@ -71,5 +77,6 @@ combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data,
   if(truncate_lakes_for_dev) {
      all_lakes_names_fixed <- all_lakes_names_fixed %>% filter(site_id %in% c("nhd_2360642", "nhd_13293262"))
   }
+
   return(all_lakes_names_fixed)
 }

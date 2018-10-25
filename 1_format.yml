@@ -47,7 +47,7 @@ targets:
     command: calc_priority_lakes(temp_dat = 'in/merged_temp_data_daily.feather', n_min = 2000, n_years = 30, years_with_7months = 10, years_with_10days = 20, n_days = 1000)
 
   priority_lakes:
-    command: combine_priorities(priority_lakes_by_choice, priority_lakes_by_data, name_crosswalk = 'in/feature_nldas_coords.rds', truncate_lakes_for_dev = I(TRUE))
+    command: combine_priorities(priority_lakes_by_choice, priority_lakes_by_data, nldas_crosswalk_file = "in/feature_nldas_coords.rds", truncate_lakes_for_dev = I(TRUE))
 
   format_data_task_plan:
     command: create_format_task_plan(priority_lakes, ind_dir = I("1_format"))
