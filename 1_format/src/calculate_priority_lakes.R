@@ -53,7 +53,7 @@ combine_priorities <- function(priority_lakes_by_choice, priority_lakes_by_data,
     filter(site_id %in% all_lakes) %>%
     mutate(obs_file = sprintf("1_format/tmp/%s_separated_obs.rds.ind", site_id),
            glm_preds_file = sprintf('1_format/in/glm_preds/%s_output.nc.ind', site_id),
-           meteo_file = sprintf("in/driver-data/NLDAS_time[0.346848]_x[%s]_y[%s].csv", nldas_coord_x, nldas_coord_y),
+           meteo_file = sprintf("in/driver-data/NLDAS_time[0.346848]_x[%s]_y[%s].csv.ind", nldas_coord_x, nldas_coord_y),
            lake_name = gsub('\\d+$', '', GNIS_Nm)) %>%
     #other columns from NLDAS file or master lake list could be saved here if useful
     select(site_id, lake_name, obs_file, glm_preds_file, meteo_file) %>%

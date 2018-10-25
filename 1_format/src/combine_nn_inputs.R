@@ -42,7 +42,7 @@
 #' @param common_depths as an alternative to `combine_cfg$min_obs_per_depth`, a vector of
 #'   common depths (in m) can be specified directly. If `common_depths` is given
 #'   then `combine_cfg$min_obs_per_depth` will be ignored
-combine_nn_data <- function(combined_ind, obs_ind, glm_preds_ind, meteo_file,
+combine_nn_data <- function(combined_ind, obs_ind, glm_preds_ind, meteo_ind,
   combine_cfg = list(min_obs_per_depth=100, min_obs_per_date=1),
   common_depths) {
 
@@ -110,7 +110,7 @@ combine_nn_data <- function(combined_ind, obs_ind, glm_preds_ind, meteo_file,
   # (1) drivers matched to the dates of the temperature observations, for NNs
   # and SNNs, or (2) a complete timeseries of drivers for all days, for RNNs and
   # RSNNs
-  meteo <- read_csv(meteo_file) %>%
+  meteo <- read_csv(as_data_file(meteo_ind)) %>%
     mutate(date = as.Date(time)) %>%
     select(-time) %>%
     select(date, everything()) %>%
