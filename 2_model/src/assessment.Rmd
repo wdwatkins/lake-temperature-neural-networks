@@ -18,6 +18,8 @@ library(gridExtra)
 
 Model `r model_list$id`: `r model_list$description`
 
+`r if(!meets_data_criteria){'<span style="color:red; font-size:30px">Warning: this lake did not meet the chosen data criteria</span>'}`
+
 ```{r summarize_network, echo=FALSE}
 model_list$network <- unserialize_model(model_list$serialized)
 summary(model_list$network)
